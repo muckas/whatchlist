@@ -11,6 +11,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters
 import db
 import traceback
 import tgbot
+import logic
 
 VERSION = '0.1.0'
 NAME = 'Assistant'
@@ -69,7 +70,7 @@ def mainloop():
 
 if __name__ == '__main__':
   try:
-    db.init('users')
+    logic.users = db.init('users')
     params = db.init('params')
     whitelist = db.init('whitelist')
     date = datetime.datetime.now().date()

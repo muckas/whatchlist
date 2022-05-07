@@ -1,0 +1,2 @@
+whatchlist - show current whatchlist
+add_anime - Add an anime to whatchlist
