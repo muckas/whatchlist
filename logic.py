@@ -11,6 +11,7 @@ log = logging.getLogger('main')
 
 temp_vars = {}
 users = None
+gogoanime_domain = 'https://gogoanime.gg/'
 
 def check_temp_vars(user_id):
   if user_id not in temp_vars:
@@ -176,6 +177,20 @@ def query_add_anime(user_id, query='0:noid'):
     return text, reply_markup
   else:
     return 'Error', None
+
+def get_whatchlist(user_id):
+  text = 'Current whatchlist\n===================='
+  user_anime = users[user_id]['anime']
+  if user_anime:
+    text += '\nAnime:'
+    for mal_id in user_anime:
+      anime_entry = user_anime[mal_id]
+      text += f'''
+      {anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]} {anime_entry["gogo_name"]}
+{anime_entry["mal_url"]}
+{gogoanime_domain}category/{anime_entry["gogo_id"]}
+      '''
+  tgbot.send_message(user_id, text)
 
 def handle_message(user_id, text):
   users = db.read('users')

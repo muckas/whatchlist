@@ -24,7 +24,12 @@ def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None
       reply_markup = ReplyKeyboardMarkup(keyboard)
   if inline_keyboard:
     reply_markup = InlineKeyboardMarkup(inline_keyboard)
-  message = tg.send_message(chat_id=user_id, text=text, disable_notification=silent, reply_markup=reply_markup)
+  message = tg.send_message(
+      chat_id=user_id,
+      text=text,
+      disable_notification=silent,
+      disable_web_page_preview=True,
+      reply_markup=reply_markup)
   log.info(f'Message to user {user_id}:{text}')
   return message
 
@@ -107,6 +112,13 @@ def command_add_anime(update, context):
     logic.check_temp_vars(user_id)
     logic.add_anime(user_id)
 
+def command_whatchlist(update, context):
+  log_message(update)
+  user_id = str(update.message.chat['id'])
+  users = db.read('users')
+  if validated(update):
+    logic.get_whatchlist(user_id)
+
 def query_handler(update, context):
   users = db.read('users')
   query = update.callback_query
@@ -134,6 +146,7 @@ def start(tg_token):
   dispatcher = updater.dispatcher
   dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, message_handler))
   dispatcher.add_handler(CommandHandler('add_anime', command_add_anime))
+  dispatcher.add_handler(CommandHandler('whatchlist', command_whatchlist))
   dispatcher.add_handler(CallbackQueryHandler(query_handler))
   dispatcher.add_error_handler(error_handler)
   updater.start_polling()
