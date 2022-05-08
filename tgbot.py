@@ -3,11 +3,12 @@ import time
 import logging
 from contextlib import suppress
 import telegram
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 import telegram.ext
 from telegram.ext import CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 import db
 import constants
+import logic
 
 log = logging.getLogger('main')
 
@@ -15,15 +16,26 @@ tg = None
 
 help_text = '''I am sorry, but there's nothing I can help you with...'''
 
-def send_message(user_id, text, silent=True, keyboard=None, reply_markup=None):
+def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None, reply_markup = None):
   if keyboard != None:
     if keyboard == []:
       reply_markup = ReplyKeyboardRemove()
     else:
       reply_markup = ReplyKeyboardMarkup(keyboard)
-  message = tg.send_message(chat_id=user_id, text=text, disable_notification=silent, reply_markup=reply_markup)
+  if inline_keyboard:
+    reply_markup = InlineKeyboardMarkup(inline_keyboard)
+  message = tg.send_message(
+      chat_id=user_id,
+      text=text,
+      disable_notification=silent,
+      disable_web_page_preview=True,
+      reply_markup=reply_markup)
   log.info(f'Message to user {user_id}:{text}')
   return message
+
+def send_image(user_id, text=None, url=None, silent=True):
+  if url:
+    tg.send_photo(chat_id=user_id, photo=url, caption=text, disable_notification=silent)
 
 def send_document(user_id, file_path, file_name, caption=None, silent=True):
   try:
@@ -33,6 +45,27 @@ def send_document(user_id, file_path, file_name, caption=None, silent=True):
       return True
   except FileNotFoundError:
     return False
+
+def get_options_keyboard(options, columns=2):
+  keyboard = []
+  for index in range(0, len(options), columns):
+    row = []
+    for offset in range(columns):
+      with suppress(IndexError):
+        row.append(options[index+offset])
+    keyboard.append(row)
+  return keyboard
+
+def get_inline_options_keyboard(options_dict, columns=2):
+  keyboard = []
+  for index in range(0, len(options_dict), columns):
+    row = []
+    for offset in range(columns):
+      with suppress(IndexError):
+        option_key = list(options_dict.keys())[index + offset]
+        row.append(InlineKeyboardButton(option_key, callback_data=options_dict[option_key]))
+    keyboard.append(row)
+  return keyboard
 
 def log_message(update):
   user_id = str(update.message.chat['id'])
@@ -72,7 +105,43 @@ def message_handler(update, context):
   user_id = str(update.message.chat['id'])
   if validated(update):
     text = update.message.text
-    send_message(user_id, f'Reply: {text}')
+    logic.check_temp_vars(user_id)
+    logic.handle_message(user_id, text)
+
+def command_add_anime(update, context):
+  log_message(update)
+  user_id = str(update.message.chat['id'])
+  users = db.read('users')
+  if validated(update):
+    logic.check_temp_vars(user_id)
+    logic.add_anime(user_id)
+
+def command_whatchlist(update, context):
+  log_message(update)
+  user_id = str(update.message.chat['id'])
+  users = db.read('users')
+  if validated(update):
+    logic.send_whatchlist(user_id)
+
+def query_handler(update, context):
+  users = db.read('users')
+  query = update.callback_query
+  user_id = str(query.message.chat_id)
+  log.info(f'Query from user {user_id}: {query.data}')
+  logic.check_temp_vars(user_id)
+  function, option = query.data.split('|')
+  if function == 'add_anime':
+    text, reply_markup = logic.query_add_anime(user_id, option)
+  elif function == 'whatchlist_remove':
+    text, reply_markup = logic.query_whatchlist_remove(user_id, option)
+  else:
+    text = 'Error'
+    reply_markup = None
+  try:
+    query.edit_message_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True,)
+  except telegram.error.BadRequest as e:
+    log.warning(f'Exception while updating query: {e}')
+  query.answer()
 
 def error_handler(update, context):
   log.warning(msg="Exception while handling an update:", exc_info=context.error)
@@ -82,6 +151,9 @@ def start(tg_token):
   updater = telegram.ext.Updater(tg_token)
   dispatcher = updater.dispatcher
   dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, message_handler))
+  dispatcher.add_handler(CommandHandler('add_anime', command_add_anime))
+  dispatcher.add_handler(CommandHandler('whatchlist', command_whatchlist))
+  dispatcher.add_handler(CallbackQueryHandler(query_handler))
   dispatcher.add_error_handler(error_handler)
   updater.start_polling()
   log.info('Telegram bot started')
