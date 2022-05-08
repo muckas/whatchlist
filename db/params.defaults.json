@@ -1,7 +1,7 @@
 {
 	"admin":false,
   "use_whitelist": false,
-	"update_interval":60,
+	"update_interval":3600,
 	"last_backup":0,
 	"max_backups":0
 }

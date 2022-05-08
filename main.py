@@ -66,7 +66,21 @@ except Exception:
   sys.exit(2)
 
 def mainloop():
-  pass
+  params = db.read('params')
+  update_interval = params['update_interval']
+  last_backup = params['last_backup']
+  max_backups = params['max_backups']
+  while True:
+    log.debug('Starting update...')
+    # Backup check
+    date = datetime.datetime.now().date()
+    if str(date) != params['last_backup']:
+      db.archive(filename='time-tracker', max_backups=max_backups)
+      params['last_backup'] = str(date)
+      db.write('params', params)
+    logic.check_all_whatchlists()
+    log.debug(f'Update complete, sleeping for {update_interval} seconds')
+    time.sleep(update_interval)
 
 if __name__ == '__main__':
   try:

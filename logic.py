@@ -34,7 +34,7 @@ def mal_return_anime(title):
   return result
 
 def mal_get_anime(mal_id):
-  log.info(f'Getting MyAnimeList anime, mal_id: {mal_id}')
+  log.debug(f'Getting MyAnimeList anime, mal_id: {mal_id}')
   return mal_return_anime(mal.Anime(mal_id))
 
 def mal_anime_search(name):
@@ -61,10 +61,11 @@ def gogo_return_anime(gogo_id):
     })
 
 def gogo_get_anime(gogo_id):
-  log.info(f'Getting GogoAnime anime, gogo_id: {gogo_id}')
+  log.debug(f'Getting GogoAnime anime, gogo_id: {gogo_id}')
   return gogo_return_anime(gogo_id)
 
 def gogo_search(name):
+  log.info(f'Searching GogoAnime anime, query: "{name}"')
   gogo_search = gogoanime.get_search_results(query=name)
   try:
     if gogo_search['status']:
@@ -241,6 +242,33 @@ def query_whatchlist_remove(user_id, query='0:noid'):
   keyboard.append(last_row)
   reply_markup = InlineKeyboardMarkup(keyboard)
   return text, reply_markup
+
+def check_whatchlist(user_id):
+  user_anime = users[user_id]['anime']
+  for mal_id in user_anime:
+    gogo_id = user_anime[mal_id]['gogo_id']
+    gogo_name = user_anime[mal_id]['gogo_name']
+    gogo_episodes = user_anime[mal_id]['gogo_episodes']
+    mal_image_url = user_anime[mal_id]['mal_image_url']
+    mal_anime = mal_get_anime(mal_id)
+    mal_episodes = user_anime[mal_id]['mal_episodes']
+    if str(mal_anime['mal_episodes']) != mal_episodes:
+      log.info(f'User {user_id}: Episodes changed for MyAnimeList anime {mal_id}')
+      users[user_id]['anime'][mal_id]['mal_episodes'] = mal_episodes = mal_anime['mal_episodes']
+    gogo_anime = gogo_get_anime(gogo_id)
+    if int(gogo_anime['gogo_episodes']) > int(gogo_episodes):
+      log.info(f'User {user_id}: New episode for anime {gogo_name}')
+      users[user_id]['anime'][mal_id]['gogo_episodes'] = gogo_episodes = gogo_anime['gogo_episodes']
+      db.write('users', users)
+      text = f'''\t\tNew episode released!
+{gogo_episodes}/{mal_episodes} {gogo_name}
+      '''
+      tgbot.send_image(user_id, text=text, url=mal_image_url)
+
+def check_all_whatchlists():
+  for user_id in users:
+    log.debug(f'Checking whatchlist for user {user_id}')
+    check_whatchlist(user_id)
 
 def handle_message(user_id, text):
   users = db.read('users')
