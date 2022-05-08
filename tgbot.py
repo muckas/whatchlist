@@ -117,7 +117,7 @@ def command_whatchlist(update, context):
   user_id = str(update.message.chat['id'])
   users = db.read('users')
   if validated(update):
-    logic.get_whatchlist(user_id)
+    logic.send_whatchlist(user_id)
 
 def query_handler(update, context):
   users = db.read('users')
@@ -128,11 +128,13 @@ def query_handler(update, context):
   function, option = query.data.split('|')
   if function == 'add_anime':
     text, reply_markup = logic.query_add_anime(user_id, option)
+  elif function == 'whatchlist_remove':
+    text, reply_markup = logic.query_whatchlist_remove(user_id, option)
   else:
     text = 'Error'
     reply_markup = None
   try:
-    query.edit_message_text(text=text, reply_markup=reply_markup)
+    query.edit_message_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True,)
   except telegram.error.BadRequest as e:
     log.warning(f'Exception while updating query: {e}')
   query.answer()

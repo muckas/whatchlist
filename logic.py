@@ -178,6 +178,10 @@ def query_add_anime(user_id, query='0:noid'):
   else:
     return 'Error', None
 
+def send_whatchlist(user_id):
+  text, reply_markup = get_whatchlist(user_id)
+  tgbot.send_message(user_id, text, reply_markup=reply_markup)
+
 def get_whatchlist(user_id):
   text = 'Current whatchlist\n===================='
   user_anime = users[user_id]['anime']
@@ -190,7 +194,53 @@ def get_whatchlist(user_id):
 {anime_entry["mal_url"]}
 {gogoanime_domain}category/{anime_entry["gogo_id"]}
       '''
-  tgbot.send_message(user_id, text)
+  keyboard = tgbot.get_inline_options_keyboard(
+      {'Remove an entry':'whatchlist_remove|0:noid'},
+      columns = 1
+      )
+  reply_markup = InlineKeyboardMarkup(keyboard)
+  return text, reply_markup
+
+def query_whatchlist_remove(user_id, query='0:noid'):
+  query_name = 'whatchlist_remove'
+  page_entries = 5
+  columns = 1
+  page, remove_id = query.split(':')
+  if remove_id == 'finish':
+    return get_whatchlist(user_id)
+  page = int(page)
+  if page < 0: page = 0
+  max_pages = 0
+  # Last row
+  last_row = [
+      InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
+      InlineKeyboardButton('Finish', callback_data=f'{query_name}|0:finish'),
+      InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),
+      ]
+  if remove_id != 'noid':
+    log.info(f'User {user_id}: Removing entry {remove_id} from  whatchlist')
+    del users[user_id]['anime'][remove_id]
+    db.write('users', users)
+  text = 'Remove from whatchlist\n================='
+  text += '\nAnime:'
+  for mal_id in users[user_id]['anime']:
+    anime_name = users[user_id]['anime'][mal_id]['gogo_name']
+    text += f'\n\t{anime_name}'
+  # Keyboard generation
+  options_dict = {}
+  slice_start = page * page_entries
+  slice_end = slice_start + page_entries
+  user_entries = users[user_id]['anime']
+  user_entry_keys = list(user_entries.keys())
+  max_pages = (len(user_entries) // page_entries)
+  for title_id in user_entry_keys[slice_start:slice_end]:
+    title_name = user_entries[title_id]['mal_name']
+    options_dict.update({title_name:f'{query_name}|{page}:{title_id}'})
+  text += f'\n\npage {page+1} of {max_pages+1}'
+  keyboard = tgbot.get_inline_options_keyboard(options_dict, columns)
+  keyboard.append(last_row)
+  reply_markup = InlineKeyboardMarkup(keyboard)
+  return text, reply_markup
 
 def handle_message(user_id, text):
   users = db.read('users')
