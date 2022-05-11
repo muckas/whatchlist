@@ -3,6 +3,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import tgbot
 import mal
 from gogoanimeapi import gogoanime
+import manganelo
 import db
 import constants
 import uuid
@@ -76,6 +77,75 @@ def gogo_search(name):
   results = []
   for title in gogo_search:
     results.append(gogo_return_anime(title['animeid']))
+  return results
+
+def mal_return_manga(title):
+  try:
+    result = {
+      'mal_id': title.mal_id,
+      'mal_name': title.title,
+      'mal_volumes': title.volumes,
+      'mal_chapters': title.chapters,
+      'mal_url': title.url,
+      'mal_image_url': title.image_url,
+      }
+  except AttributeError:
+    result = {
+      'mal_id': title.mal_id,
+      'mal_name': title.title,
+      'mal_volumes': title.volumes,
+      'mal_chapters': 0,
+      'mal_url': title.url,
+      'mal_image_url': title.image_url,
+      }
+  if result['mal_chapters'] == None:
+    result['mal_chapters'] = 0
+  return result
+
+def mal_get_manga(mal_id):
+  log.debug(f'Getting MyAnimeList manga, mal_id: {mal_id}')
+  return mal_return_manga(mal.Manga(mal_id))
+
+def mal_manga_search(name):
+  name = name[:100] # Max query - 100 characters
+  log.info(f'Searching MyAnimeList manga, query: "{name}"')
+  try:
+    mal_search = mal.MangaSearch(name)
+    results = []
+    for title in mal_search.results:
+      results.append(mal_return_manga(title))
+    return results
+  except ValueError as e:
+    log.warning(f'MyNimeList error: {e}')
+    return []
+
+def mgn_return_manga(manga):
+  try:
+    return ({
+      'mgn_name': manga.title,
+      'mgn_chapters': len(manga.chapters),
+      'mgn_url': manga.url,
+      'mgn_image_url': manga.icon_url,
+      })
+  except AttributeError:
+    return ({
+      'mgn_name': manga.title,
+      'mgn_chapters': len(manga.chapter_list()),
+      'mgn_url': manga.url,
+      'mgn_image_url': manga.icon_url,
+      })
+
+def mgn_get_manga(mgn_url):
+  log.debug(f'Getting Manganato manga, mgn_url: {mgn_url}')
+  manga = manganelo.storypage.get_story_page(mgn_url)
+  return mgn_return_manga(manga)
+
+def mgn_search(name):
+  log.info(f'Searching Manganato manga, query: "{name}"')
+  mgn_search = manganelo.get_search_results(name)
+  results = []
+  for manga in mgn_search:
+    results.append(mgn_return_manga(manga))
   return results
 
 def add_anime(user_id):
@@ -289,3 +359,8 @@ def handle_message(user_id, text):
     reply = 'Error, try again'
     tgbot.send_message(user_id, reply)
     change_state(user_id, 'main_menu')
+
+if __name__ == '__main__':
+  # manga = mgn_search('gintama')
+  manga = mgn_get_manga('https://readmanganato.com/manga-sc955837')
+  print(manga)
