@@ -33,9 +33,9 @@ def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None
   log.info(f'Message to user {user_id}:{text}')
   return message
 
-def send_image(user_id, text=None, url=None, silent=True):
+def send_image(user_id, text=None, url=None, silent=True, parse_mode=None):
   if url:
-    tg.send_photo(chat_id=user_id, photo=url, caption=text, disable_notification=silent)
+    tg.send_photo(chat_id=user_id, photo=url, caption=text, disable_notification=silent, parse_mode=parse_mode)
 
 def send_document(user_id, file_path, file_name, caption=None, silent=True):
   try:
