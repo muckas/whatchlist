@@ -437,6 +437,7 @@ def query_whatchlist_remove(user_id, query='0:noid'):
 
 def check_whatchlist(user_id):
   user_anime = users[user_id]['anime']
+  user_manga = users[user_id]['manga']
   for mal_id in user_anime:
     gogo_id = user_anime[mal_id]['gogo_id']
     gogo_name = user_anime[mal_id]['gogo_name']
@@ -456,6 +457,25 @@ def check_whatchlist(user_id):
 {gogo_episodes}/{mal_episodes} {gogo_name}
       '''
       tgbot.send_image(user_id, text=text, url=mal_image_url)
+  for mal_id in user_manga:
+    mgn_url = user_manga[mal_id]['mgn_url']
+    mgn_name = user_manga[mal_id]['mgn_name']
+    mgn_chapters = user_manga[mal_id]['mgn_chapters']
+    mgn_image_url = user_manga[mal_id]['mgn_image_url']
+    mal_manga = mal_get_manga(mal_id)
+    mal_chapters = user_manga[mal_id]['mal_chapters']
+    if mal_manga['mal_chapters'] != mal_chapters:
+      log.info(f'User {user_id}: Chapters changed for MyAnimeList manga {mal_id}')
+      users[user_id]['manga'][mal_id]['mal_chapters'] = mal_chapters = mal_manga['mal_chapters']
+    mgn_manga = mgn_get_manga(mgn_url)
+    if int(mgn_manga['mgn_chapters']) > int(mgn_chapters):
+      log.info(f'User {user_id}: New chapter for manga {mgn_name}')
+      users[user_id]['manga'][mal_id]['mgn_chapters'] = mgn_chapters = mgn_manga['mgn_chapters']
+      db.write('users', users)
+      text = f'''\t\tNew chapter released!
+{mgn_chapters}/{mal_chapters} {mgn_name}
+      '''
+      tgbot.send_image(user_id, text=text, url=mgn_image_url)
 
 def check_all_whatchlists():
   for user_id in users:
@@ -484,8 +504,3 @@ def handle_message(user_id, text):
     reply = 'Error, try again'
     tgbot.send_message(user_id, reply)
     change_state(user_id, 'main_menu')
-
-if __name__ == '__main__':
-  manga = mgn_search('asdasdjkqlwjqlkjqd')
-  # manga = mgn_get_manga('https://readmanganato.com/manga-sc955837')
-  print(manga)
