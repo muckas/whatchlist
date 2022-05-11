@@ -100,6 +100,8 @@ def mal_return_manga(title):
       }
   if result['mal_chapters'] == None:
     result['mal_chapters'] = 0
+  if result['mal_volumes'] == None:
+    result['mal_volumes'] = 0
   return result
 
 def mal_get_manga(mal_id):
@@ -252,6 +254,111 @@ def query_add_anime(user_id, query='0:noid'):
   else:
     return 'Error', None, None
 
+def add_manga(user_id):
+  temp_vars[user_id]['search_string'] = None
+  temp_vars[user_id]['mal_manga'] = None
+  temp_vars[user_id]['mal_search_results'] = None
+  temp_vars[user_id]['mgn_manga'] = None
+  temp_vars[user_id]['mgn_search_results'] = None
+  tgbot.send_message(user_id, 'Name of the manga?')
+  change_state(user_id, 'add_manga')
+
+def save_manga_to_db(user_id):
+  mal_manga_id = temp_vars[user_id]['mal_manga']['mal_id']
+  manga_dict = mal_get_manga(mal_manga_id)
+  manga_dict.update(temp_vars[user_id]['mgn_manga'])
+  log.debug(f'User {user_id}: saving manga entry to with id {manga_dict["mal_id"]}')
+  users[user_id]['manga'][manga_dict['mal_id']] = manga_dict
+  db.write('users', users)
+
+def query_add_manga(user_id, query='0:noid'):
+  query_name = 'add_manga'
+  page_entries = 5
+  columns = 1
+  search_string = temp_vars[user_id]['search_string']
+  mal_manga = temp_vars[user_id]['mal_manga']
+  mal_search_results = temp_vars[user_id]['mal_search_results']
+  mgn_manga = temp_vars[user_id]['mgn_manga']
+  mgn_search_results = temp_vars[user_id]['mgn_search_results']
+  page, search_id = query.split(':')
+  page = int(page)
+  if page < 0: page = 0
+  max_pages = 0
+  # Last row
+  last_row = [
+      InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
+      InlineKeyboardButton('Cancel', callback_data=f'{query_name}|{page}:cancel'),
+      InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),
+      ]
+  if search_id == 'cancel':
+    return 'Canceled adding manga', None, None
+  if search_id != 'noid':
+    search_id = int(search_id)
+    if mal_manga:
+      mgn_manga = temp_vars[user_id]['mgn_manga'] = mgn_get_manga(mgn_search_results[search_id]['mgn_url'])
+    else:
+      mal_manga = temp_vars[user_id]['mal_manga'] = mal_get_manga(mal_search_results[search_id]['mal_id'])
+      page = 0
+
+  text = 'Manga search\n==================='
+  if search_string:
+    if mgn_manga:
+      text = 'Added new manga to whatchlist\n================'
+      text += f'\nMyAnimeList title:\n\t{mal_manga["mal_name"]}'
+      text += f'\n\nManganato title:\n\t{mgn_manga["mgn_name"]}'
+      text += f'\n\nChapters: {mgn_manga["mgn_chapters"]}/{mal_manga["mal_chapters"]}'
+      keyboard = []
+      save_manga_to_db(user_id)
+    elif mal_manga:
+      text = f'\nMyAnimeList title:\n\t{mal_manga["mal_name"]}'
+      # Keyboard generation
+      options_dict = {}
+      slice_start = page * page_entries
+      slice_end = slice_start + page_entries
+      if mgn_search_results == None:
+        temp_vars[user_id]['mgn_search_results'] = mgn_search_results = mgn_search(search_string)
+      max_pages = (len(mgn_search_results) // page_entries)
+      if mgn_search_results:
+        num_id = 0
+        for title in mgn_search_results[slice_start:slice_end]:
+          mgn_manga_name = title['mgn_name']
+          mgn_manga_chapters = title['mgn_chapters']
+          options_dict.update({f'{mgn_manga_chapters} | {mgn_manga_name}':f'{query_name}|{page}:{slice_start+num_id}'})
+          num_id += 1
+        text += '\n\nManganato title?'
+        text += f'\n\npage {page+1} of {max_pages+1}'
+        keyboard = tgbot.get_inline_options_keyboard(options_dict, columns)
+        keyboard.append(last_row)
+      else:
+        text += '\n\nNothing was found on Manganato'
+        keyboard = []
+    else:
+      # Keyboard generation
+      options_dict = {}
+      slice_start = page * page_entries
+      slice_end = slice_start + page_entries
+      if mal_search_results == None:
+        temp_vars[user_id]['mal_search_results'] = mal_search_results = mal_manga_search(search_string)
+      max_pages = (len(mal_search_results) // page_entries)
+      if mal_search_results:
+        num_id = 0
+        for title in mal_search_results[slice_start:slice_end]:
+          mal_manga_name = title['mal_name']
+          mal_manga_volumes = title['mal_volumes']
+          options_dict.update({f'{mal_manga_volumes} | {mal_manga_name}':f'{query_name}|{page}:{slice_start+num_id}'})
+          num_id += 1
+        text += '\nMyAnimeList title?'
+        text += f'\n\npage {page+1} of {max_pages+1}'
+        keyboard = tgbot.get_inline_options_keyboard(options_dict, columns)
+        keyboard.append(last_row)
+      else:
+        text += '\nNothing was found on MyAnimeList'
+        keyboard = []
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    return text, reply_markup, None
+  else:
+    return 'Error', None, None
+
 def send_whatchlist(user_id):
   text, reply_markup, parse_mode = get_whatchlist(user_id)
   tgbot.send_message(user_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
@@ -355,12 +462,19 @@ def handle_message(user_id, text):
     tgbot.send_message(user_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
     change_state(user_id, 'main_menu')
 
+  # STATE - add_manga
+  if state == 'add_manga':
+    temp_vars[user_id]['search_string'] = text
+    text, reply_markup, parse_mode = query_add_manga(user_id)
+    tgbot.send_message(user_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
+    change_state(user_id, 'main_menu')
+
   else:
     reply = 'Error, try again'
     tgbot.send_message(user_id, reply)
     change_state(user_id, 'main_menu')
 
 if __name__ == '__main__':
-  # manga = mgn_search('gintama')
-  manga = mgn_get_manga('https://readmanganato.com/manga-sc955837')
+  manga = mgn_search('asdasdjkqlwjqlkjqd')
+  # manga = mgn_get_manga('https://readmanganato.com/manga-sc955837')
   print(manga)
