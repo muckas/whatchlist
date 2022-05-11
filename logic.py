@@ -110,8 +110,11 @@ def query_add_anime(user_id, query='0:noid'):
   # Last row
   last_row = [
       InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
+      InlineKeyboardButton('Cancel', callback_data=f'{query_name}|{page}:cancel'),
       InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),
       ]
+  if search_id == 'cancel':
+    return 'Canceled adding anime', None, None
   if search_id != 'noid':
     search_id = int(search_id)
     if mal_anime:
