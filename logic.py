@@ -252,7 +252,7 @@ def check_whatchlist(user_id):
     mal_image_url = user_anime[mal_id]['mal_image_url']
     mal_anime = mal_get_anime(mal_id)
     mal_episodes = user_anime[mal_id]['mal_episodes']
-    if str(mal_anime['mal_episodes']) != mal_episodes:
+    if mal_anime['mal_episodes'] != mal_episodes:
       log.info(f'User {user_id}: Episodes changed for MyAnimeList anime {mal_id}')
       users[user_id]['anime'][mal_id]['mal_episodes'] = mal_episodes = mal_anime['mal_episodes']
     gogo_anime = gogo_get_anime(gogo_id)
