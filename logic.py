@@ -371,7 +371,7 @@ def get_whatchlist(user_id):
     text += '\n*Anime*'
     for mal_id in user_anime:
       anime_entry = user_anime[mal_id]
-      anime_name = anime_entry['gogo_name'].replace('(', '\(').replace(')', '\)').replace('!','\!')
+      anime_name = anime_entry['gogo_name'].replace('(','\(').replace(')','\)').replace('!','\!').replace('-',"\-")
       if anime_entry['mal_episodes'] == 0: anime_entry['mal_episodes'] = '?'
       anime_episodes = f'{anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]}'
       gogo_link = f'{gogoanime_domain}category/{anime_entry["gogo_id"]}'
@@ -381,7 +381,7 @@ def get_whatchlist(user_id):
     text += '\n*Manga*'
     for mal_id in user_manga:
       manga_entry = user_manga[mal_id]
-      manga_name = manga_entry['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!', '\!')
+      manga_name = manga_entry['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!', '\!').replace('-',"\-")
       if manga_entry['mal_chapters'] == 0: manga_entry['mal_chapters'] = '?'
       manga_chapters = f'{manga_entry["mgn_chapters"]}/{manga_entry["mal_chapters"]}'
       mgn_link = manga_entry['mgn_url']
@@ -451,7 +451,7 @@ def check_whatchlist(user_id):
   user_manga = users[user_id]['manga']
   for mal_id in user_anime:
     gogo_id = user_anime[mal_id]['gogo_id']
-    gogo_name = user_anime[mal_id]['gogo_name'].replace('(', '\(').replace(')', '\)').replace('!','\!')
+    gogo_name = user_anime[mal_id]['gogo_name'].replace('(', '\(').replace(')', '\)').replace('!','\!').replace('-',"\-")
     gogo_episodes = user_anime[mal_id]['gogo_episodes']
     gogo_url = f'{gogoanime_domain}category/{gogo_id}'
     mal_image_url = user_anime[mal_id]['mal_image_url']
@@ -472,7 +472,7 @@ def check_whatchlist(user_id):
       tgbot.send_image(user_id, text=text, url=mal_image_url, parse_mode='MarkdownV2')
   for mal_id in user_manga:
     mgn_url = user_manga[mal_id]['mgn_url']
-    mgn_name = user_manga[mal_id]['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!','\!')
+    mgn_name = user_manga[mal_id]['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!','\!').replace('-',"\-")
     mgn_chapters = user_manga[mal_id]['mgn_chapters']
     mgn_image_url = user_manga[mal_id]['mgn_image_url']
     mal_manga = mal_get_manga(mal_id)
