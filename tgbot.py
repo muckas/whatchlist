@@ -14,7 +14,7 @@ log = logging.getLogger('main')
 
 tg = None
 
-def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None, reply_markup = None):
+def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None, reply_markup = None, parse_mode=None):
   if keyboard != None:
     if keyboard == []:
       reply_markup = ReplyKeyboardRemove()
@@ -27,7 +27,9 @@ def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None
       text=text,
       disable_notification=silent,
       disable_web_page_preview=True,
-      reply_markup=reply_markup)
+      reply_markup=reply_markup,
+      parse_mode=parse_mode
+      )
   log.info(f'Message to user {user_id}:{text}')
   return message
 
@@ -128,14 +130,14 @@ def query_handler(update, context):
   logic.check_temp_vars(user_id)
   function, option = query.data.split('|')
   if function == 'add_anime':
-    text, reply_markup = logic.query_add_anime(user_id, option)
+    text, reply_markup, parse_mode = logic.query_add_anime(user_id, option)
   elif function == 'whatchlist_remove':
-    text, reply_markup = logic.query_whatchlist_remove(user_id, option)
+    text, reply_markup, parse_mode = logic.query_whatchlist_remove(user_id, option)
   else:
     text = 'Error'
     reply_markup = None
   try:
-    query.edit_message_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True,)
+    query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=parse_mode, disable_web_page_preview=True,)
   except telegram.error.BadRequest as e:
     log.warning(f'Exception while updating query: {e}')
   query.answer()

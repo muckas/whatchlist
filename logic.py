@@ -175,32 +175,33 @@ def query_add_anime(user_id, query='0:noid'):
         text += '\nNothing was found on MyAnimeList'
         keyboard = []
     reply_markup = InlineKeyboardMarkup(keyboard)
-    return text, reply_markup
+    return text, reply_markup, None
   else:
-    return 'Error', None
+    return 'Error', None, None
 
 def send_whatchlist(user_id):
-  text, reply_markup = get_whatchlist(user_id)
-  tgbot.send_message(user_id, text, reply_markup=reply_markup)
+  text, reply_markup, parse_mode = get_whatchlist(user_id)
+  tgbot.send_message(user_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
 
 def get_whatchlist(user_id):
-  text = 'Current whatchlist\n===================='
+  text = '*Current whatchlist*\n'
   user_anime = users[user_id]['anime']
   if user_anime:
-    text += '\nAnime:'
+    text += '\n*Anime*'
     for mal_id in user_anime:
       anime_entry = user_anime[mal_id]
-      text += f'''
-      {anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]} {anime_entry["gogo_name"]}
-{anime_entry["mal_url"]}
-{gogoanime_domain}category/{anime_entry["gogo_id"]}
-      '''
+      anime_name = anime_entry['gogo_name'].replace('(', '\(').replace(')', '\)')
+      if anime_entry['mal_episodes'] == 0: anime_entry['mal_episodes'] = '?'
+      anime_episodes = f'{anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]}'
+      gogo_link = f'{gogoanime_domain}category/{anime_entry["gogo_id"]}'
+      mal_link = anime_entry['mal_url']
+      text += f'\n\t\t[{anime_episodes}]({gogo_link}) [{anime_name}]({mal_link})'
   keyboard = tgbot.get_inline_options_keyboard(
       {'Remove an entry':'whatchlist_remove|0:noid'},
       columns = 1
       )
   reply_markup = InlineKeyboardMarkup(keyboard)
-  return text, reply_markup
+  return text, reply_markup, 'MarkdownV2'
 
 def query_whatchlist_remove(user_id, query='0:noid'):
   query_name = 'whatchlist_remove'
@@ -241,7 +242,7 @@ def query_whatchlist_remove(user_id, query='0:noid'):
   keyboard = tgbot.get_inline_options_keyboard(options_dict, columns)
   keyboard.append(last_row)
   reply_markup = InlineKeyboardMarkup(keyboard)
-  return text, reply_markup
+  return text, reply_markup, None
 
 def check_whatchlist(user_id):
   user_anime = users[user_id]['anime']
@@ -277,8 +278,8 @@ def handle_message(user_id, text):
   # STATE - add_anime
   if state == 'add_anime':
     temp_vars[user_id]['search_string'] = text
-    text, reply_markup = query_add_anime(user_id)
-    tgbot.send_message(user_id, text, reply_markup=reply_markup)
+    text, reply_markup, parse_mode = query_add_anime(user_id)
+    tgbot.send_message(user_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
     change_state(user_id, 'main_menu')
 
   else:
