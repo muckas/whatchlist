@@ -14,8 +14,6 @@ log = logging.getLogger('main')
 
 tg = None
 
-help_text = '''I am sorry, but there's nothing I can help you with...'''
-
 def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None, reply_markup = None):
   if keyboard != None:
     if keyboard == []:
@@ -76,16 +74,14 @@ def log_message(update):
 def add_user_to_db(update):
   user_id = str(update.message.chat['id'])
   log.info(f'Adding new user {user_id} to database')
-  users = db.read('users')
   tg_username = str(update.message.chat['username'])
-  users.update({user_id:constants.get_default_user(tg_username)})
-  db.write('users', users)
+  logic.users.update({user_id:constants.get_default_user(tg_username)})
+  db.write('users', logic.users)
   log.info(f'Added @{tg_username} to database')
 
 def validated(update, notify=False):
   user_id = str(update.message.chat['id'])
-  users = db.read('users')
-  if user_id not in users:
+  if user_id not in logic.users:
     add_user_to_db(update)
   whitelist = db.read('whitelist')
   if db.read('params')['use_whitelist']:
@@ -103,28 +99,29 @@ def validated(update, notify=False):
 def message_handler(update, context):
   log_message(update)
   user_id = str(update.message.chat['id'])
+  logic.users = db.read('users')
   if validated(update):
     text = update.message.text
     logic.check_temp_vars(user_id)
     logic.handle_message(user_id, text)
 
 def command_add_anime(update, context):
+  logic.users = db.read('users')
   log_message(update)
   user_id = str(update.message.chat['id'])
-  users = db.read('users')
   if validated(update):
     logic.check_temp_vars(user_id)
     logic.add_anime(user_id)
 
 def command_whatchlist(update, context):
+  logic.users = db.read('users')
   log_message(update)
   user_id = str(update.message.chat['id'])
-  users = db.read('users')
   if validated(update):
     logic.send_whatchlist(user_id)
 
 def query_handler(update, context):
-  users = db.read('users')
+  logic.users = db.read('users')
   query = update.callback_query
   user_id = str(query.message.chat_id)
   log.info(f'Query from user {user_id}: {query.data}')
