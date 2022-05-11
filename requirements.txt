@@ -6,6 +6,7 @@ cachetools==4.2.2
 certifi==2021.10.8
 charset-normalizer==2.0.12
 cssselect==1.1.0
+Deprecated==1.2.13
 easyargs==0.9.4
 fake-useragent==0.1.11
 gogoanime-api==1.2.458
@@ -13,13 +14,16 @@ idna==3.3
 importlib-metadata==4.11.3
 lxml==4.8.0
 mal-api==0.5.2
+manganelo==1.20.4
 parse==1.19.0
+Pillow==9.1.0
 pyee==8.2.2
 pyppeteer==1.0.2
 pyquery==1.4.3
 python-telegram-bot==13.11
 pytz==2022.1
 pytz-deprecation-shim==0.1.0.post0
+reportlab==3.6.9
 requests==2.27.1
 requests-html==0.10.0
 six==1.16.0
@@ -32,4 +36,5 @@ tzlocal==4.2
 urllib3==1.26.9
 w3lib==1.22.0
 websockets==10.3
+wrapt==1.14.1
 zipp==3.8.0

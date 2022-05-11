@@ -1,2 +1,3 @@
 whatchlist - show current whatchlist
 add_anime - add an anime to whatchlist
+add_manga - add a manga to whatchlist

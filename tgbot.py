@@ -14,9 +14,7 @@ log = logging.getLogger('main')
 
 tg = None
 
-help_text = '''I am sorry, but there's nothing I can help you with...'''
-
-def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None, reply_markup = None):
+def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None, reply_markup = None, parse_mode=None):
   if keyboard != None:
     if keyboard == []:
       reply_markup = ReplyKeyboardRemove()
@@ -29,13 +27,15 @@ def send_message(user_id, text, silent=True, keyboard=None, inline_keyboard=None
       text=text,
       disable_notification=silent,
       disable_web_page_preview=True,
-      reply_markup=reply_markup)
+      reply_markup=reply_markup,
+      parse_mode=parse_mode
+      )
   log.info(f'Message to user {user_id}:{text}')
   return message
 
-def send_image(user_id, text=None, url=None, silent=True):
+def send_image(user_id, text=None, url=None, silent=True, parse_mode=None):
   if url:
-    tg.send_photo(chat_id=user_id, photo=url, caption=text, disable_notification=silent)
+    tg.send_photo(chat_id=user_id, photo=url, caption=text, disable_notification=silent, parse_mode=parse_mode)
 
 def send_document(user_id, file_path, file_name, caption=None, silent=True):
   try:
@@ -76,16 +76,14 @@ def log_message(update):
 def add_user_to_db(update):
   user_id = str(update.message.chat['id'])
   log.info(f'Adding new user {user_id} to database')
-  users = db.read('users')
   tg_username = str(update.message.chat['username'])
-  users.update({user_id:constants.get_default_user(tg_username)})
-  db.write('users', users)
+  logic.users.update({user_id:constants.get_default_user(tg_username)})
+  db.write('users', logic.users)
   log.info(f'Added @{tg_username} to database')
 
 def validated(update, notify=False):
   user_id = str(update.message.chat['id'])
-  users = db.read('users')
-  if user_id not in users:
+  if user_id not in logic.users:
     add_user_to_db(update)
   whitelist = db.read('whitelist')
   if db.read('params')['use_whitelist']:
@@ -103,42 +101,53 @@ def validated(update, notify=False):
 def message_handler(update, context):
   log_message(update)
   user_id = str(update.message.chat['id'])
+  logic.users = db.read('users')
   if validated(update):
     text = update.message.text
     logic.check_temp_vars(user_id)
     logic.handle_message(user_id, text)
 
 def command_add_anime(update, context):
+  logic.users = db.read('users')
   log_message(update)
   user_id = str(update.message.chat['id'])
-  users = db.read('users')
   if validated(update):
     logic.check_temp_vars(user_id)
     logic.add_anime(user_id)
 
-def command_whatchlist(update, context):
+def command_add_manga(update, context):
+  logic.users = db.read('users')
   log_message(update)
   user_id = str(update.message.chat['id'])
-  users = db.read('users')
+  if validated(update):
+    logic.check_temp_vars(user_id)
+    logic.add_manga(user_id)
+
+def command_whatchlist(update, context):
+  logic.users = db.read('users')
+  log_message(update)
+  user_id = str(update.message.chat['id'])
   if validated(update):
     logic.send_whatchlist(user_id)
 
 def query_handler(update, context):
-  users = db.read('users')
+  logic.users = db.read('users')
   query = update.callback_query
   user_id = str(query.message.chat_id)
   log.info(f'Query from user {user_id}: {query.data}')
   logic.check_temp_vars(user_id)
   function, option = query.data.split('|')
   if function == 'add_anime':
-    text, reply_markup = logic.query_add_anime(user_id, option)
+    text, reply_markup, parse_mode = logic.query_add_anime(user_id, option)
+  elif function == 'add_manga':
+    text, reply_markup, parse_mode = logic.query_add_manga(user_id, option)
   elif function == 'whatchlist_remove':
-    text, reply_markup = logic.query_whatchlist_remove(user_id, option)
+    text, reply_markup, parse_mode = logic.query_whatchlist_remove(user_id, option)
   else:
     text = 'Error'
     reply_markup = None
   try:
-    query.edit_message_text(text=text, reply_markup=reply_markup, disable_web_page_preview=True,)
+    query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=parse_mode, disable_web_page_preview=True,)
   except telegram.error.BadRequest as e:
     log.warning(f'Exception while updating query: {e}')
   query.answer()
@@ -152,6 +161,7 @@ def start(tg_token):
   dispatcher = updater.dispatcher
   dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, message_handler))
   dispatcher.add_handler(CommandHandler('add_anime', command_add_anime))
+  dispatcher.add_handler(CommandHandler('add_manga', command_add_manga))
   dispatcher.add_handler(CommandHandler('whatchlist', command_whatchlist))
   dispatcher.add_handler(CallbackQueryHandler(query_handler))
   dispatcher.add_error_handler(error_handler)
