@@ -366,16 +366,27 @@ def send_whatchlist(user_id):
 def get_whatchlist(user_id):
   text = '*Current whatchlist*\n'
   user_anime = users[user_id]['anime']
+  user_manga = users[user_id]['manga']
   if user_anime:
     text += '\n*Anime*'
     for mal_id in user_anime:
       anime_entry = user_anime[mal_id]
-      anime_name = anime_entry['gogo_name'].replace('(', '\(').replace(')', '\)')
+      anime_name = anime_entry['gogo_name'].replace('(', '\(').replace(')', '\)').replace('!','\!')
       if anime_entry['mal_episodes'] == 0: anime_entry['mal_episodes'] = '?'
       anime_episodes = f'{anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]}'
       gogo_link = f'{gogoanime_domain}category/{anime_entry["gogo_id"]}'
       mal_link = anime_entry['mal_url']
       text += f'\n\t\t[{anime_episodes}]({gogo_link}) [{anime_name}]({mal_link})'
+  if user_manga:
+    text += '\n*Manga*'
+    for mal_id in user_manga:
+      manga_entry = user_manga[mal_id]
+      manga_name = manga_entry['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!', '\!')
+      if manga_entry['mal_chapters'] == 0: manga_entry['mal_chapters'] = '?'
+      manga_chapters = f'{manga_entry["mgn_chapters"]}/{manga_entry["mal_chapters"]}'
+      mgn_link = manga_entry['mgn_url']
+      mal_link = manga_entry['mal_url']
+      text += f'\n\t\t[{manga_chapters}]({mgn_link}) [{manga_name}]({mal_link})'
   keyboard = tgbot.get_inline_options_keyboard(
       {'Remove an entry':'whatchlist_remove|0:noid'},
       columns = 1
