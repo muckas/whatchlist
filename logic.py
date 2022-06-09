@@ -82,7 +82,7 @@ def check_whatchlist(user_id):
   user_manga = users[user_id]['manga']
   for mal_id in user_anime:
     gogo_id = user_anime[mal_id]['gogo_id']
-    gogo_name = user_anime[mal_id]['gogo_name'].replace('(', '\(').replace(')', '\)').replace('!','\!').replace('-',"\-")
+    gogo_name = tgbot.markdown_replace(user_anime[mal_id]['gogo_name'])
     gogo_episodes = user_anime[mal_id]['gogo_episodes']
     gogo_url = f'{gogoanime_domain}category/{gogo_id}'
     mal_image_url = user_anime[mal_id]['mal_image_url']
@@ -103,7 +103,7 @@ def check_whatchlist(user_id):
       tgbot.send_image(user_id, text=text, url=mal_image_url, parse_mode='MarkdownV2')
   for mal_id in user_manga:
     mgn_url = user_manga[mal_id]['mgn_url']
-    mgn_name = user_manga[mal_id]['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!','\!').replace('-',"\-")
+    mgn_name = tgbot.markdown_replace(user_manga[mal_id]['mgn_name'])
     mgn_chapters = user_manga[mal_id]['mgn_chapters']
     mgn_image_url = user_manga[mal_id]['mgn_image_url']
     mal_manga = mal_get_manga(mal_id)

@@ -68,6 +68,11 @@ def get_inline_options_keyboard(options_dict, columns=2):
     keyboard.append(row)
   return keyboard
 
+def markdown_replace(text):
+  for char in '_*[]()~>#+-=|{}.!':
+    text = text.replace(char, '\\' + char)
+  return text
+
 def log_message(update):
   user_id = str(update.message.chat['id'])
   username = str(update.message.chat['username'])

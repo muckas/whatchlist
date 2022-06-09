@@ -353,7 +353,7 @@ def get_anime_whatchlist(user_id):
   user_anime = logic.users[user_id]['anime']
   for mal_id in user_anime:
     anime_entry = user_anime[mal_id]
-    anime_name = anime_entry['gogo_name'].replace('(','\(').replace(')','\)').replace('!','\!').replace('-',"\-")
+    anime_name = tgbot.markdown_replace(anime_entry['gogo_name'])
     anime_episodes = f'{anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]}'
     gogo_link = f'{gogoanime_domain}category/{anime_entry["gogo_id"]}'
     mal_link = anime_entry['mal_url']
@@ -377,7 +377,7 @@ def get_manga_whatchlist(user_id):
   user_manga = logic.users[user_id]['manga']
   for mal_id in user_manga:
     manga_entry = user_manga[mal_id]
-    manga_name = manga_entry['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!', '\!').replace('-',"\-")
+    manga_name = tgbot.markdown_replace(manga_entry['mgn_name'])
     manga_chapters = f'{manga_entry["mgn_chapters"]}/{manga_entry["mal_chapters"]}'
     mgn_link = manga_entry['mgn_url']
     mal_link = manga_entry['mal_url']
