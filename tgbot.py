@@ -9,6 +9,7 @@ from telegram.ext import CommandHandler, MessageHandler, Filters, CallbackQueryH
 import db
 import constants
 import logic
+import manganime
 
 log = logging.getLogger('main')
 
@@ -113,7 +114,7 @@ def command_add_anime(update, context):
   user_id = str(update.message.chat['id'])
   if validated(update):
     logic.check_temp_vars(user_id)
-    logic.add_anime(user_id)
+    manganime.add_anime(user_id)
 
 def command_add_manga(update, context):
   logic.users = db.read('users')
@@ -121,7 +122,7 @@ def command_add_manga(update, context):
   user_id = str(update.message.chat['id'])
   if validated(update):
     logic.check_temp_vars(user_id)
-    logic.add_manga(user_id)
+    manganime.add_manga(user_id)
 
 def command_whatchlist(update, context):
   logic.users = db.read('users')
@@ -138,9 +139,9 @@ def query_handler(update, context):
   logic.check_temp_vars(user_id)
   function, option = query.data.split('|')
   if function == 'add_anime':
-    text, reply_markup, parse_mode = logic.query_add_anime(user_id, option)
+    text, reply_markup, parse_mode = manganime.query_add_anime(user_id, option)
   elif function == 'add_manga':
-    text, reply_markup, parse_mode = logic.query_add_manga(user_id, option)
+    text, reply_markup, parse_mode = manganime.query_add_manga(user_id, option)
   elif function == 'whatchlist_remove':
     text, reply_markup, parse_mode = logic.query_whatchlist_remove(user_id, option)
   else:
