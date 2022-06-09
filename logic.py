@@ -77,55 +77,10 @@ def query_whatchlist_remove(user_id, query='0:anime:noid'):
   reply_markup = InlineKeyboardMarkup(keyboard)
   return text, reply_markup, 'MarkdownV2'
 
-def check_whatchlist(user_id):
-  user_anime = users[user_id]['anime']
-  user_manga = users[user_id]['manga']
-  for mal_id in user_anime:
-    gogo_id = user_anime[mal_id]['gogo_id']
-    gogo_name = tgbot.markdown_replace(user_anime[mal_id]['gogo_name'])
-    gogo_episodes = user_anime[mal_id]['gogo_episodes']
-    gogo_url = f'{gogoanime_domain}category/{gogo_id}'
-    mal_image_url = user_anime[mal_id]['mal_image_url']
-    mal_url = user_anime[mal_id]['mal_url']
-    mal_anime = mal_get_anime(mal_id)
-    mal_episodes = user_anime[mal_id]['mal_episodes']
-    if mal_anime['mal_episodes'] != mal_episodes:
-      log.info(f'User {user_id}: Episodes changed for MyAnimeList anime {mal_id}')
-      users[user_id]['anime'][mal_id]['mal_episodes'] = mal_episodes = mal_anime['mal_episodes']
-    gogo_anime = gogo_get_anime(gogo_id)
-    if int(gogo_anime['gogo_episodes']) > int(gogo_episodes):
-      log.info(f'User {user_id}: New episode for anime {gogo_name}')
-      users[user_id]['anime'][mal_id]['gogo_episodes'] = gogo_episodes = gogo_anime['gogo_episodes']
-      db.write('users', users)
-      text = f'''\t\tNew [episode]({gogo_url}) released\!
-{gogo_episodes}/{mal_episodes} [{gogo_name}]({mal_url})
-      '''
-      tgbot.send_image(user_id, text=text, url=mal_image_url, parse_mode='MarkdownV2')
-  for mal_id in user_manga:
-    mgn_url = user_manga[mal_id]['mgn_url']
-    mgn_name = tgbot.markdown_replace(user_manga[mal_id]['mgn_name'])
-    mgn_chapters = user_manga[mal_id]['mgn_chapters']
-    mgn_image_url = user_manga[mal_id]['mgn_image_url']
-    mal_manga = mal_get_manga(mal_id)
-    mal_chapters = user_manga[mal_id]['mal_chapters']
-    mal_url = user_manga[mal_id]['mal_url']
-    if mal_manga['mal_chapters'] != mal_chapters:
-      log.info(f'User {user_id}: Chapters changed for MyAnimeList manga {mal_id}')
-      users[user_id]['manga'][mal_id]['mal_chapters'] = mal_chapters = mal_manga['mal_chapters']
-    mgn_manga = mgn_get_manga(mgn_url)
-    if int(mgn_manga['mgn_chapters']) > int(mgn_chapters):
-      log.info(f'User {user_id}: New chapter for manga {mgn_name}')
-      users[user_id]['manga'][mal_id]['mgn_chapters'] = mgn_chapters = mgn_manga['mgn_chapters']
-      db.write('users', users)
-      text = f'''\t\tNew [chapter]({mgn_url}) released\!
-{mgn_chapters}/{mal_chapters} [{mgn_name}]({mal_url})
-      '''
-      tgbot.send_image(user_id, text=text, url=mgn_image_url, parse_mode='MarkdownV2')
-
 def check_all_whatchlists():
   for user_id in users:
-    log.debug(f'Checking whatchlist for user {user_id}')
-    check_whatchlist(user_id)
+    manganime.check_anime_whatchlist(user_id)
+    manganime.check_manga_whatchlist(user_id)
 
 def handle_message(user_id, text):
   users = db.read('users')

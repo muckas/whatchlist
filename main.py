@@ -78,7 +78,7 @@ def mainloop():
       db.archive(filename='time-tracker', max_backups=max_backups)
       params['last_backup'] = str(date)
       db.write('params', params)
-    # logic.check_all_whatchlists()
+    logic.check_all_whatchlists()
     log.debug(f'Update complete, sleeping for {update_interval} seconds')
     time.sleep(update_interval)
 
