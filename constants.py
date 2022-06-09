@@ -4,6 +4,7 @@ import uuid
 def get_temp_vars():
   return {
       'state':'main_menu',
+      'whatchlist':'anime',
       'search_string': None,
       'mal_anime': None,
       'mal_manga': None,
