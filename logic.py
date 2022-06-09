@@ -31,7 +31,7 @@ def mal_return_anime(title):
     'mal_image_url': title.image_url,
     }
   if result['mal_episodes'] == None:
-    result['mal_episodes'] = 0
+    result['mal_episodes'] = '?'
   return result
 
 def mal_get_anime(mal_id):
@@ -99,9 +99,9 @@ def mal_return_manga(title):
       'mal_image_url': title.image_url,
       }
   if result['mal_chapters'] == None:
-    result['mal_chapters'] = 0
+    result['mal_chapters'] = '?'
   if result['mal_volumes'] == None:
-    result['mal_volumes'] = 0
+    result['mal_volumes'] = '?'
   return result
 
 def mal_get_manga(mal_id):
@@ -372,7 +372,6 @@ def get_whatchlist(user_id):
     for mal_id in user_anime:
       anime_entry = user_anime[mal_id]
       anime_name = anime_entry['gogo_name'].replace('(','\(').replace(')','\)').replace('!','\!').replace('-',"\-")
-      if anime_entry['mal_episodes'] == 0: anime_entry['mal_episodes'] = '?'
       anime_episodes = f'{anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]}'
       gogo_link = f'{gogoanime_domain}category/{anime_entry["gogo_id"]}'
       mal_link = anime_entry['mal_url']
@@ -382,7 +381,6 @@ def get_whatchlist(user_id):
     for mal_id in user_manga:
       manga_entry = user_manga[mal_id]
       manga_name = manga_entry['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!', '\!').replace('-',"\-")
-      if manga_entry['mal_chapters'] == 0: manga_entry['mal_chapters'] = '?'
       manga_chapters = f'{manga_entry["mgn_chapters"]}/{manga_entry["mal_chapters"]}'
       mgn_link = manga_entry['mgn_url']
       mal_link = manga_entry['mal_url']
