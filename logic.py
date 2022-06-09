@@ -12,7 +12,6 @@ log = logging.getLogger('main')
 
 temp_vars = {}
 users = None
-gogoanime_domain = 'https://gogoanime.gg/'
 
 def check_temp_vars(user_id):
   if user_id not in temp_vars:
@@ -23,89 +22,60 @@ def change_state(user_id, new_state):
   log.debug(f'New state "{new_state}" for user {user_id}')
 
 def send_whatchlist(user_id):
-  text, reply_markup, parse_mode = get_whatchlist(user_id)
+  text, reply_markup, parse_mode = query_whatchlist(user_id)
   tgbot.send_message(user_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
 
-def get_whatchlist(user_id):
-  text = '*Current whatchlist*\n'
-  user_anime = users[user_id]['anime']
-  user_manga = users[user_id]['manga']
-  if user_anime:
-    text += '\n*Anime*'
-    for mal_id in user_anime:
-      anime_entry = user_anime[mal_id]
-      anime_name = anime_entry['gogo_name'].replace('(','\(').replace(')','\)').replace('!','\!').replace('-',"\-")
-      anime_episodes = f'{anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]}'
-      gogo_link = f'{gogoanime_domain}category/{anime_entry["gogo_id"]}'
-      mal_link = anime_entry['mal_url']
-      text += f'\n\t\t[{anime_episodes}]({gogo_link}) [{anime_name}]({mal_link})'
-  if user_manga:
-    text += '\n*Manga*'
-    for mal_id in user_manga:
-      manga_entry = user_manga[mal_id]
-      manga_name = manga_entry['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!', '\!').replace('-',"\-")
-      manga_chapters = f'{manga_entry["mgn_chapters"]}/{manga_entry["mal_chapters"]}'
-      mgn_link = manga_entry['mgn_url']
-      mal_link = manga_entry['mal_url']
-      text += f'\n\t\t[{manga_chapters}]({mgn_link}) [{manga_name}]({mal_link})'
-  keyboard = tgbot.get_inline_options_keyboard(
-      {'Remove an entry':'whatchlist_remove|0:noid'},
-      columns = 1
-      )
-  reply_markup = InlineKeyboardMarkup(keyboard)
-  return text, reply_markup, 'MarkdownV2'
+def query_whatchlist(user_id, query=None):
+  if query:
+    whatchlist = temp_vars[user_id]['whatchlist'] = query
+  else:
+    whatchlist = temp_vars[user_id]['whatchlist']
+  if whatchlist == 'anime':
+    return manganime.get_anime_whatchlist(user_id)
+  elif whatchlist == 'manga':
+    return manganime.get_manga_whatchlist(user_id)
 
-def query_whatchlist_remove(user_id, query='0:noid'):
+def query_whatchlist_remove(user_id, query='0:anime:noid'):
   query_name = 'whatchlist_remove'
   page_entries = 5
   columns = 1
-  page, remove_id = query.split(':')
+  page, entry_type, remove_id = query.split(':')
   if remove_id == 'finish':
-    return get_whatchlist(user_id)
+    return query_whatchlist(user_id)
   page = int(page)
   if page < 0: page = 0
   max_pages = 0
   # Last row
   last_row = [
-      InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
-      InlineKeyboardButton('Finish', callback_data=f'{query_name}|0:finish'),
-      InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),
+      InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:{entry_type}:noid'),
+      InlineKeyboardButton('Finish', callback_data=f'{query_name}|0:{entry_type}:finish'),
+      InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:{entry_type}:noid'),
       ]
   if remove_id != 'noid':
     log.info(f'User {user_id}: Removing entry {remove_id} from whatchlist')
-    try:
-      del users[user_id]['anime'][remove_id]
-    except KeyError:
-      del users[user_id]['manga'][remove_id]
+    del users[user_id][entry_type][remove_id]
     db.write('users', users)
-  text = 'Remove from whatchlist\n================='
-  text += '\nAnime:'
-  for mal_id in users[user_id]['anime']:
-    anime_name = users[user_id]['anime'][mal_id]['gogo_name']
-    text += f'\n\t{anime_name}'
-  text += '\n\nManga:'
-  for mal_id in users[user_id]['manga']:
-    manga_name = users[user_id]['manga'][mal_id]['mgn_name']
-    text += f'\n\t{manga_name}'
+  text = '*Removing from* '
+  whatchlist_text, *args = query_whatchlist(user_id, entry_type)
+  text += whatchlist_text
   # Keyboard generation
   options_dict = {}
   slice_start = page * page_entries
   slice_end = slice_start + page_entries
-  user_entries = users[user_id]['anime']
-  user_entries.update(users[user_id]['manga'])
+  user_entries = users[user_id][entry_type]
   user_entry_keys = list(user_entries.keys())
   max_pages = (len(user_entries) // page_entries)
   for title_id in user_entry_keys[slice_start:slice_end]:
-    try:
+    if entry_type == 'anime':
       title_name = user_entries[title_id]['gogo_name']
-    except KeyError:
+    elif entry_type == 'manga':
       title_name = user_entries[title_id]['mgn_name']
-    options_dict.update({title_name:f'{query_name}|{page}:{title_id}'})
+    options_dict.update({title_name:f'{query_name}|{page}:{entry_type}:{title_id}'})
   text += f'\n\npage {page+1} of {max_pages+1}'
   keyboard = tgbot.get_inline_options_keyboard(options_dict, columns)
   keyboard.append(last_row)
   reply_markup = InlineKeyboardMarkup(keyboard)
-  return text, reply_markup, None
+  return text, reply_markup, 'MarkdownV2'
 
 def check_whatchlist(user_id):
   user_anime = users[user_id]['anime']

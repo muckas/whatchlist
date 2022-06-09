@@ -129,6 +129,7 @@ def command_whatchlist(update, context):
   log_message(update)
   user_id = str(update.message.chat['id'])
   if validated(update):
+    logic.check_temp_vars(user_id)
     logic.send_whatchlist(user_id)
 
 def query_handler(update, context):
@@ -142,6 +143,8 @@ def query_handler(update, context):
     text, reply_markup, parse_mode = manganime.query_add_anime(user_id, option)
   elif function == 'add_manga':
     text, reply_markup, parse_mode = manganime.query_add_manga(user_id, option)
+  elif function == 'whatchlist':
+    text, reply_markup, parse_mode = logic.query_whatchlist(user_id, option)
   elif function == 'whatchlist_remove':
     text, reply_markup, parse_mode = logic.query_whatchlist_remove(user_id, option)
   else:

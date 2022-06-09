@@ -9,6 +9,8 @@ import logic
 
 log = logging.getLogger('main')
 
+gogoanime_domain = 'https://gogoanime.gg/'
+
 def mal_return_anime(title):
   result = {
     'mal_id': title.mal_id,
@@ -345,3 +347,51 @@ def query_add_manga(user_id, query='0:noid'):
     return text, reply_markup, None
   else:
     return 'Error', None, None
+
+def get_anime_whatchlist(user_id):
+  text = '*Anime whatchlist*\n'
+  user_anime = logic.users[user_id]['anime']
+  for mal_id in user_anime:
+    anime_entry = user_anime[mal_id]
+    anime_name = anime_entry['gogo_name'].replace('(','\(').replace(')','\)').replace('!','\!').replace('-',"\-")
+    anime_episodes = f'{anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]}'
+    gogo_link = f'{gogoanime_domain}category/{anime_entry["gogo_id"]}'
+    mal_link = anime_entry['mal_url']
+    text += f'\n[{anime_episodes}]({gogo_link}) [{anime_name}]({mal_link})'
+  keyboard = tgbot.get_inline_options_keyboard(
+      {
+        'Anime':'whatchlist|anime',
+        'Manga':'whatchlist|manga',
+      },
+      columns = 2
+    )
+  keyboard += tgbot.get_inline_options_keyboard(
+      {'Remove an entry':'whatchlist_remove|0:anime:noid'},
+      columns = 1
+    )
+  reply_markup = InlineKeyboardMarkup(keyboard)
+  return text, reply_markup, 'MarkdownV2'
+
+def get_manga_whatchlist(user_id):
+  text = '*Manga whatchlist*\n'
+  user_manga = logic.users[user_id]['manga']
+  for mal_id in user_manga:
+    manga_entry = user_manga[mal_id]
+    manga_name = manga_entry['mgn_name'].replace('(', '\(').replace(')', '\)').replace('!', '\!').replace('-',"\-")
+    manga_chapters = f'{manga_entry["mgn_chapters"]}/{manga_entry["mal_chapters"]}'
+    mgn_link = manga_entry['mgn_url']
+    mal_link = manga_entry['mal_url']
+    text += f'\n\t\t[{manga_chapters}]({mgn_link}) [{manga_name}]({mal_link})'
+  keyboard = tgbot.get_inline_options_keyboard(
+      {
+        'Anime':'whatchlist|anime',
+        'Manga':'whatchlist|manga',
+      },
+      columns = 2
+    )
+  keyboard += tgbot.get_inline_options_keyboard(
+      {'Remove an entry':'whatchlist_remove|0:manga:noid'},
+      columns = 1
+    )
+  reply_markup = InlineKeyboardMarkup(keyboard)
+  return text, reply_markup, 'MarkdownV2'
