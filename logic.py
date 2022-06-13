@@ -86,6 +86,7 @@ def check_all_whatchlists():
   for user_id in users:
     manganime.check_anime_whatchlist(user_id)
     manganime.check_manga_whatchlist(user_id)
+    bandcamp.check_music_whatchlist(user_id)
 
 def handle_message(user_id, text):
   users = db.read('users')
