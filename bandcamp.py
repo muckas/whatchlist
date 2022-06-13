@@ -1,5 +1,6 @@
 import logging
 import traceback
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import requests
 from requests.compat import urljoin
 import bs4
@@ -79,3 +80,26 @@ def add_music_to_whatchlist(user_id, url):
       tgbot.send_message(user_id, f'Incorrect bandcamp url')
   else:
     tgbot.send_message(user_id, f'Incorrect bandcamp url')
+
+def get_music_whatchlist(user_id):
+  text = '*Music whatchlist*\n'
+  user_music = logic.users[user_id]['music']
+  for bandcamp_id in user_music:
+    music_entry = user_music[bandcamp_id]
+    artist_name = tgbot.markdown_replace(music_entry['name'])
+    artist_link = music_entry['url']
+    text += f'\n\t\t[{artist_name}]({artist_link})'
+  keyboard = tgbot.get_inline_options_keyboard(
+      {
+        'Anime':'whatchlist|anime',
+        'Manga':'whatchlist|manga',
+        'Music':'whatchlist|music',
+      },
+      columns = 3
+    )
+  keyboard += tgbot.get_inline_options_keyboard(
+      {'Remove an entry':'whatchlist_remove|0:music:noid'},
+      columns = 1
+    )
+  reply_markup = InlineKeyboardMarkup(keyboard)
+  return text, reply_markup, 'MarkdownV2'

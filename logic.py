@@ -35,6 +35,8 @@ def query_whatchlist(user_id, query=None):
     return manganime.get_anime_whatchlist(user_id)
   elif whatchlist == 'manga':
     return manganime.get_manga_whatchlist(user_id)
+  elif whatchlist == 'music':
+    return bandcamp.get_music_whatchlist(user_id)
 
 def query_whatchlist_remove(user_id, query='0:anime:noid'):
   query_name = 'whatchlist_remove'
@@ -71,6 +73,8 @@ def query_whatchlist_remove(user_id, query='0:anime:noid'):
       title_name = user_entries[title_id]['gogo_name']
     elif entry_type == 'manga':
       title_name = user_entries[title_id]['mgn_name']
+    elif entry_type == 'music':
+      title_name = user_entries[title_id]['name']
     options_dict.update({title_name:f'{query_name}|{page}:{entry_type}:{title_id}'})
   text += f'\n\npage {page+1} of {max_pages+1}'
   keyboard = tgbot.get_inline_options_keyboard(options_dict, columns)

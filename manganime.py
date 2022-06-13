@@ -362,8 +362,9 @@ def get_anime_whatchlist(user_id):
       {
         'Anime':'whatchlist|anime',
         'Manga':'whatchlist|manga',
+        'Music':'whatchlist|music',
       },
-      columns = 2
+      columns = 3
     )
   keyboard += tgbot.get_inline_options_keyboard(
       {'Remove an entry':'whatchlist_remove|0:anime:noid'},
@@ -386,8 +387,9 @@ def get_manga_whatchlist(user_id):
       {
         'Anime':'whatchlist|anime',
         'Manga':'whatchlist|manga',
+        'Music':'whatchlist|music',
       },
-      columns = 2
+      columns = 3
     )
   keyboard += tgbot.get_inline_options_keyboard(
       {'Remove an entry':'whatchlist_remove|0:manga:noid'},
