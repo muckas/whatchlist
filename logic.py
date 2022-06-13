@@ -7,6 +7,7 @@ import manganelo
 import db
 import constants
 import manganime
+import bandcamp
 
 log = logging.getLogger('main')
 
@@ -98,6 +99,11 @@ def handle_message(user_id, text):
     temp_vars[user_id]['search_string'] = text
     text, reply_markup, parse_mode = manganime.query_add_manga(user_id)
     tgbot.send_message(user_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
+    change_state(user_id, 'main_menu')
+
+  # STATE - add_music
+  elif state == 'add_music':
+    bandcamp.add_music_to_whatchlist(user_id, text)
     change_state(user_id, 'main_menu')
 
   else:

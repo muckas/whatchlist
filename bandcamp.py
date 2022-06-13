@@ -1,22 +1,32 @@
 import logging
+import traceback
 import requests
 from requests.compat import urljoin
 import bs4
 import re
+from urllib.parse import urlparse
 import db
+import tgbot
 import constants
 import logic
 
 log = logging.getLogger('main')
 
 def get_bandcamp_page(url):
-  page = requests.get(url)
-  return bs4.BeautifulSoup(page.content, 'html.parser')
+  try:
+    page = requests.get(url)
+    return bs4.BeautifulSoup(page.content, 'html.parser')
+  except Exception as e:
+    log.warning((traceback.format_exc()))
+    return None
 
 def get_artist_name(page):
   name_container = page.find(id="band-name-location")
-  name = name_container.find(class_='title').text
-  return name
+  if name_container:
+    name = name_container.find(class_='title').text
+    return name
+  else:
+    return None
 
 def get_artist_releases(page):
   music = page.find(id='music-grid')
@@ -43,3 +53,29 @@ def get_release_info(page):
     for title in track_table.find_all(class_='track-title'):
       release_info['tracks'].append(title.text)
   return release_info
+
+def add_music(user_id):
+  tgbot.send_message(user_id, 'Bandcamp link?')
+  logic.change_state(user_id, 'add_music')
+
+def add_music_to_whatchlist(user_id, url):
+  url = urljoin(url, '/')
+  page = get_bandcamp_page(url)
+  if page:
+    name = get_artist_name(page)
+    if name:
+      last_release = get_artist_releases(page)[0]
+      parsed_url = urlparse(url)
+      subdomain = parsed_url.hostname.split('.')[0]
+      music_entry = {
+          'name': name,
+          'url': url,
+          'last_release': last_release,
+          }
+      logic.users[user_id]['music'].update({subdomain: music_entry})
+      db.write('users', logic.users)
+      tgbot.send_message(user_id, f'{name} added to whatchlist')
+    else:
+      tgbot.send_message(user_id, f'Incorrect bandcamp url')
+  else:
+    tgbot.send_message(user_id, f'Incorrect bandcamp url')
