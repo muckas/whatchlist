@@ -7,6 +7,7 @@ import manganelo
 import db
 import constants
 import manganime
+import bandcamp
 
 log = logging.getLogger('main')
 
@@ -34,6 +35,8 @@ def query_whatchlist(user_id, query=None):
     return manganime.get_anime_whatchlist(user_id)
   elif whatchlist == 'manga':
     return manganime.get_manga_whatchlist(user_id)
+  elif whatchlist == 'music':
+    return bandcamp.get_music_whatchlist(user_id)
 
 def query_whatchlist_remove(user_id, query='0:anime:noid'):
   query_name = 'whatchlist_remove'
@@ -70,6 +73,8 @@ def query_whatchlist_remove(user_id, query='0:anime:noid'):
       title_name = user_entries[title_id]['gogo_name']
     elif entry_type == 'manga':
       title_name = user_entries[title_id]['mgn_name']
+    elif entry_type == 'music':
+      title_name = user_entries[title_id]['name']
     options_dict.update({title_name:f'{query_name}|{page}:{entry_type}:{title_id}'})
   text += f'\n\npage {page+1} of {max_pages+1}'
   keyboard = tgbot.get_inline_options_keyboard(options_dict, columns)
@@ -81,6 +86,7 @@ def check_all_whatchlists():
   for user_id in users:
     manganime.check_anime_whatchlist(user_id)
     manganime.check_manga_whatchlist(user_id)
+    bandcamp.check_music_whatchlist(user_id)
 
 def handle_message(user_id, text):
   users = db.read('users')
@@ -98,6 +104,11 @@ def handle_message(user_id, text):
     temp_vars[user_id]['search_string'] = text
     text, reply_markup, parse_mode = manganime.query_add_manga(user_id)
     tgbot.send_message(user_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
+    change_state(user_id, 'main_menu')
+
+  # STATE - add_music
+  elif state == 'add_music':
+    bandcamp.add_music_to_whatchlist(user_id, text)
     change_state(user_id, 'main_menu')
 
   else:

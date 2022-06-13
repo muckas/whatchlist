@@ -10,6 +10,7 @@ import db
 import constants
 import logic
 import manganime
+import bandcamp
 
 log = logging.getLogger('main')
 
@@ -129,6 +130,14 @@ def command_add_manga(update, context):
     logic.check_temp_vars(user_id)
     manganime.add_manga(user_id)
 
+def command_add_music(update, context):
+  logic.users = db.read('users')
+  log_message(update)
+  user_id = str(update.message.chat['id'])
+  if validated(update):
+    logic.check_temp_vars(user_id)
+    bandcamp.add_music(user_id)
+
 def command_whatchlist(update, context):
   logic.users = db.read('users')
   log_message(update)
@@ -171,6 +180,7 @@ def start(tg_token):
   dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, message_handler))
   dispatcher.add_handler(CommandHandler('add_anime', command_add_anime))
   dispatcher.add_handler(CommandHandler('add_manga', command_add_manga))
+  dispatcher.add_handler(CommandHandler('add_music', command_add_music))
   dispatcher.add_handler(CommandHandler('whatchlist', command_whatchlist))
   dispatcher.add_handler(CallbackQueryHandler(query_handler))
   dispatcher.add_error_handler(error_handler)

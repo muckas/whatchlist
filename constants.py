@@ -20,4 +20,5 @@ def get_default_user(tg_username):
       'username':tg_username,
       'anime': {},
       'manga': {},
+      'music': {},
       }
