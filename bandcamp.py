@@ -109,34 +109,37 @@ def check_music_whatchlist(user_id):
   log.debug(f'Checking music for user {user_id}')
   user_music = logic.users[user_id]['music']
   for artist in user_music:
-    artist_name = user_music[artist]['name']
-    artist_url = user_music[artist]['url']
-    last_release = user_music[artist]['last_release']
-    page = get_bandcamp_page(artist_url)
-    releases = get_artist_releases(page)
-    new_releases = []
-    for release in releases:
-      if release == last_release:
-        break
-      else:
-        new_releases.append(release)
-    if new_releases:
-      new_releases.reverse()
-      for release in new_releases:
-        log.info(f'User {user_id}: New music release for {artist}: {release}')
-        release_url = urljoin(artist_url, release)
-        release_page = get_bandcamp_page(release_url)
-        release_info = get_release_info(release_page)
-        release_name = tgbot.markdown_replace(release_info['name'])
-        release_author = tgbot.markdown_replace(release_info['author'])
-        release_image_url = (release_info['image_url'])
-        release_tracks = (release_info['tracks'])
-        text = f'\t\tNew music [release]({release_url})\!'
-        print(text)
-        text += f'\n*{release_name}* by *{release_author}*\n'
-        for track in release_tracks:
-          track_name = tgbot.markdown_replace(track)
-          text += f'\n\t\t{track_name}'
-        logic.users[user_id]['music'][artist]['last_release'] = release
-        db.write('users', logic.users)
-        tgbot.send_image(user_id, text=text, url=release_image_url, parse_mode='MarkdownV2')
+    try:
+      artist_name = user_music[artist]['name']
+      artist_url = user_music[artist]['url']
+      last_release = user_music[artist]['last_release']
+      page = get_bandcamp_page(artist_url)
+      releases = get_artist_releases(page)
+      new_releases = []
+      for release in releases:
+        if release == last_release:
+          break
+        else:
+          new_releases.append(release)
+      if new_releases:
+        new_releases.reverse()
+        for release in new_releases:
+          log.info(f'User {user_id}: New music release for {artist}: {release}')
+          release_url = urljoin(artist_url, release)
+          release_page = get_bandcamp_page(release_url)
+          release_info = get_release_info(release_page)
+          release_name = tgbot.markdown_replace(release_info['name'])
+          release_author = tgbot.markdown_replace(release_info['author'])
+          release_image_url = (release_info['image_url'])
+          release_tracks = (release_info['tracks'])
+          text = f'\t\tNew music [release]({release_url})\!'
+          print(text)
+          text += f'\n*{release_name}* by *{release_author}*\n'
+          for track in release_tracks:
+            track_name = tgbot.markdown_replace(track)
+            text += f'\n\t\t{track_name}'
+          logic.users[user_id]['music'][artist]['last_release'] = release
+          db.write('users', logic.users)
+          tgbot.send_image(user_id, text=text, url=release_image_url, parse_mode='MarkdownV2')
+    except Exception:
+      log.warning((traceback.format_exc()))
