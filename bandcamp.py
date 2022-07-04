@@ -132,7 +132,7 @@ def check_music_whatchlist(user_id):
           release_author = tgbot.markdown_replace(release_info['author'])
           release_image_url = (release_info['image_url'])
           release_tracks = (release_info['tracks'])
-          text = f'\t\tNew music [release]({release_url})\!'
+          text = f'\t\tNew music [release]({release_url}) from [{artist_name}]({artist_url})\!'
           print(text)
           text += f'\n*{release_name}* by *{release_author}*\n'
           for track in release_tracks:
