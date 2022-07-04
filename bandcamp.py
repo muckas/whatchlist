@@ -62,7 +62,8 @@ def add_music(user_id):
 
 def add_music_to_whatchlist(user_id, url):
   url = urljoin(url, '/')
-  page = get_bandcamp_page(url)
+  music_url = urljoin(url, 'music')
+  page = get_bandcamp_page(music_url)
   if page:
     name = get_artist_name(page)
     if name:
@@ -88,8 +89,9 @@ def get_music_whatchlist(user_id):
   for bandcamp_id in user_music:
     music_entry = user_music[bandcamp_id]
     artist_name = tgbot.markdown_replace(music_entry['name'])
-    artist_link = music_entry['url']
-    text += f'\n\t\t[{artist_name}]({artist_link})'
+    artist_url = music_entry['url']
+    artist_url = urljoin(artist_url, 'music')
+    text += f'\n\t\t[{artist_name}]({artist_url})'
   keyboard = tgbot.get_inline_options_keyboard(
       {
         'Anime':'whatchlist|anime',
@@ -110,8 +112,9 @@ def check_music_whatchlist(user_id):
   user_music = logic.users[user_id]['music']
   for artist in user_music:
     try:
-      artist_name = user_music[artist]['name']
+      artist_name = tgbot.markdown_replace(user_music[artist]['name'])
       artist_url = user_music[artist]['url']
+      artist_url = urljoin(artist_url, 'music')
       last_release = user_music[artist]['last_release']
       page = get_bandcamp_page(artist_url)
       releases = get_artist_releases(page)
