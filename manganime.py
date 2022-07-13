@@ -121,12 +121,22 @@ def mgn_return_manga(manga):
       'mgn_image_url': manga.icon_url,
       })
   except AttributeError:
-    return ({
-      'mgn_name': manga.title,
-      'mgn_chapters': len(manga.chapter_list()),
-      'mgn_url': manga.url,
-      'mgn_image_url': manga.icon_url,
-      })
+    try:
+      return ({
+        'mgn_name': manga.title,
+        'mgn_chapters': len(manga.chapter_list()),
+        'mgn_url': manga.url,
+        'mgn_image_url': manga.icon_url,
+        })
+    except Exception as e:
+      log.warning(f'Handling exception {e}')
+      log.warning((traceback.format_exc()))
+      return ({
+        'mgn_name': 'Error displaying manga',
+        'mgn_chapters': 0,
+        'mgn_url': '',
+        'mgn_image_url': '',
+        })
 
 def mgn_get_manga(mgn_url):
   log.debug(f'Getting Manganato manga, mgn_url: {mgn_url}')
@@ -135,11 +145,15 @@ def mgn_get_manga(mgn_url):
 
 def mgn_search(name):
   log.info(f'Searching Manganato manga, query: "{name}"')
-  mgn_search = manganelo.get_search_results(name)
-  results = []
-  for manga in mgn_search:
-    results.append(mgn_return_manga(manga))
-  return results
+  try:
+    mgn_search = manganelo.get_search_results(name)
+    results = []
+    for manga in mgn_search:
+      results.append(mgn_return_manga(manga))
+    return results
+  except Exception:
+    log.warning((traceback.format_exc()))
+    return []
 
 def add_anime(user_id):
   logic.temp_vars[user_id]['search_string'] = None
