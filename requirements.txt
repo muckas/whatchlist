@@ -14,7 +14,7 @@ idna==3.3
 importlib-metadata==4.11.3
 lxml==4.8.0
 mal-api==0.5.2
-manganelo==1.20.4
+manganelo==1.21.0
 parse==1.19.0
 Pillow==9.1.0
 pyee==8.2.2
