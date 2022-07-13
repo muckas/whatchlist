@@ -5,6 +5,7 @@ import tgbot
 import mal
 from gogoanimeapi import gogoanime
 import manganelo
+import uuid
 import db
 import logic
 
@@ -255,9 +256,9 @@ def add_manga(user_id):
 
 def save_manga_to_db(user_id):
   mal_manga_id = logic.temp_vars[user_id]['mal_manga']['mal_id']
-  manga_dict = mal_get_manga(mal_manga_id)
+  manga_dict = logic.temp_vars[user_id]['mal_manga']
   manga_dict.update(logic.temp_vars[user_id]['mgn_manga'])
-  log.debug(f'User {user_id}: saving manga entry to with id {manga_dict["mal_id"]}')
+  log.debug(f'User {user_id}: saving manga entry to db with id {manga_dict["mal_id"]}')
   logic.users[user_id]['manga'][manga_dict['mal_id']] = manga_dict
   db.write('users', logic.users)
 
@@ -278,11 +279,23 @@ def query_add_manga(user_id, query='0:noid'):
   last_row = [
       InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
       InlineKeyboardButton('Cancel', callback_data=f'{query_name}|{page}:cancel'),
-      InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),
       ]
+  if not mal_manga:
+    last_row.append(InlineKeyboardButton('Skip MAL', callback_data=f'{query_name}|{page+1}:skip'),)
+  last_row.append(InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),)
   if search_id == 'cancel':
     return 'Canceled adding manga', None, None
-  if search_id != 'noid':
+  elif search_id == 'skip':
+    mal_manga = logic.temp_vars[user_id]['mal_manga'] = {
+      'mal_id': str(uuid.uuid4()),
+      'mal_name': '',
+      'mal_volumes': '?',
+      'mal_chapters': '?',
+      'mal_url': '',
+      'mal_image_url': '',
+      }
+    page = 0
+  elif search_id != 'noid':
     search_id = int(search_id)
     if mal_manga:
       mgn_manga = logic.temp_vars[user_id]['mgn_manga'] = mgn_get_manga(mgn_search_results[search_id]['mgn_url'])
@@ -436,12 +449,13 @@ def check_manga_whatchlist(user_id):
       mgn_name = tgbot.markdown_replace(user_manga[mal_id]['mgn_name'])
       mgn_chapters = user_manga[mal_id]['mgn_chapters']
       mgn_image_url = user_manga[mal_id]['mgn_image_url']
-      mal_manga = mal_get_manga(mal_id)
-      mal_chapters = user_manga[mal_id]['mal_chapters']
       mal_url = user_manga[mal_id]['mal_url']
-      if mal_manga['mal_chapters'] != mal_chapters:
-        log.info(f'User {user_id}: Chapters changed for MyAnimeList manga {mal_id}')
-        logic.users[user_id]['manga'][mal_id]['mal_chapters'] = mal_chapters = mal_manga['mal_chapters']
+      mal_chapters = user_manga[mal_id]['mal_chapters']
+      if not logic.is_valid_uuid(mal_id):
+        mal_manga = mal_get_manga(mal_id)
+        if mal_manga['mal_chapters'] != mal_chapters:
+          log.info(f'User {user_id}: Chapters changed for MyAnimeList manga {mal_id}')
+          logic.users[user_id]['manga'][mal_id]['mal_chapters'] = mal_chapters = mal_manga['mal_chapters']
       mgn_manga = mgn_get_manga(mgn_url)
       if int(mgn_manga['mgn_chapters']) > int(mgn_chapters):
         log.info(f'User {user_id}: New chapter for manga {mgn_name}')
