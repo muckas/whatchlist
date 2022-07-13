@@ -4,6 +4,7 @@ import tgbot
 import mal
 from gogoanimeapi import gogoanime
 import manganelo
+import uuid
 import db
 import constants
 import manganime
@@ -13,6 +14,13 @@ log = logging.getLogger('main')
 
 temp_vars = {}
 users = None
+
+def is_valid_uuid(value):
+	try:
+		uuid.UUID(str(value))
+		return True
+	except ValueError:
+		return False
 
 def check_temp_vars(user_id):
   if user_id not in temp_vars:
