@@ -124,7 +124,7 @@ def mgn_return_manga(manga):
     try:
       return ({
         'mgn_name': manga.title,
-        'mgn_chapters': len(manga.chapter_list()),
+        'mgn_chapters': len(manga.chapter_list),
         'mgn_url': manga.url,
         'mgn_image_url': manga.icon_url,
         })
