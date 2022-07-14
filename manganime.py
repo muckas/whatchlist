@@ -113,30 +113,12 @@ def mal_manga_search(name):
     return []
 
 def mgn_return_manga(manga):
-  try:
-    return ({
-      'mgn_name': manga.title,
-      'mgn_chapters': len(manga.chapters),
-      'mgn_url': manga.url,
-      'mgn_image_url': manga.icon_url,
-      })
-  except AttributeError:
-    try:
-      return ({
-        'mgn_name': manga.title,
-        'mgn_chapters': len(manga.chapter_list),
-        'mgn_url': manga.url,
-        'mgn_image_url': manga.icon_url,
-        })
-    except Exception as e:
-      log.warning(f'Handling exception {e}')
-      log.warning((traceback.format_exc()))
-      return ({
-        'mgn_name': 'Error displaying manga',
-        'mgn_chapters': 0,
-        'mgn_url': '',
-        'mgn_image_url': '',
-        })
+  return ({
+    'mgn_name': manga.title,
+    'mgn_chapters': len(manga.chapter_list),
+    'mgn_url': manga.url,
+    'mgn_image_url': manga.icon_url,
+    })
 
 def mgn_get_manga(mgn_url):
   log.debug(f'Getting Manganato manga, mgn_url: {mgn_url}')
@@ -442,6 +424,7 @@ def check_anime_whatchlist(user_id):
       if mal_anime['mal_episodes'] != mal_episodes:
         log.info(f'User {user_id}: Episodes changed for MyAnimeList anime {mal_id}')
         logic.users[user_id]['anime'][mal_id]['mal_episodes'] = mal_episodes = mal_anime['mal_episodes']
+        db.write('users', logic.users)
       gogo_anime = gogo_get_anime(gogo_id)
       if int(gogo_anime['gogo_episodes']) > int(gogo_episodes):
         log.info(f'User {user_id}: New episode for anime {gogo_name}')
@@ -470,6 +453,7 @@ def check_manga_whatchlist(user_id):
         if mal_manga['mal_chapters'] != mal_chapters:
           log.info(f'User {user_id}: Chapters changed for MyAnimeList manga {mal_id}')
           logic.users[user_id]['manga'][mal_id]['mal_chapters'] = mal_chapters = mal_manga['mal_chapters']
+          db.write('users', logic.users)
       mgn_manga = mgn_get_manga(mgn_url)
       if int(mgn_manga['mgn_chapters']) > int(mgn_chapters):
         log.info(f'User {user_id}: New chapter for manga {mgn_name}')
