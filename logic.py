@@ -78,9 +78,15 @@ def query_whatchlist_remove(user_id, query='0:anime:noid'):
   max_pages = (len(user_entries) // page_entries)
   for title_id in user_entry_keys[slice_start:slice_end]:
     if entry_type == 'anime':
-      title_name = user_entries[title_id]['gogo_name']
+      mal_episodes = user_entries[title_id]['mal_episodes']
+      gogo_episodes = user_entries[title_id]['gogo_episodes']
+      gogo_name = user_entries[title_id]['gogo_name']
+      title_name = f'{gogo_episodes}/{mal_episodes} {gogo_name}'
     elif entry_type == 'manga':
-      title_name = user_entries[title_id]['mgn_name']
+      mal_chapters = user_entries[title_id]['mal_chapters']
+      mgn_chapters = user_entries[title_id]['mgn_chapters']
+      mgn_name = user_entries[title_id]['mgn_name']
+      title_name = f'{mgn_chapters}/{mal_chapters} {mgn_name}'
     elif entry_type == 'music':
       title_name = user_entries[title_id]['name']
     options_dict.update({title_name:f'{query_name}|{page}:{entry_type}:{title_id}'})

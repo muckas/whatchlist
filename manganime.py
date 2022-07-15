@@ -1,5 +1,6 @@
 import logging
 import traceback
+import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import tgbot
 import mal
@@ -433,7 +434,12 @@ def check_anime_whatchlist(user_id):
         text = f'''\t\tNew [episode]({gogo_url}) released\!
   {gogo_episodes}/{mal_episodes} [{gogo_name}]({mal_url})
         '''
-        tgbot.send_image(user_id, text=text, url=mal_image_url, parse_mode='MarkdownV2')
+        try: # Send text if unable to send image
+          tgbot.send_image(user_id, text=text, url=mal_image_url, parse_mode='MarkdownV2')
+        except telegram.error.BadRequest as e:
+          log.warning(f'Handling exception "{e}"')
+          tgbot.send_message(user_id, text=text, parse_mode='MarkdownV2')
+          log.warning((traceback.format_exc()))
     except Exception:
       log.warning((traceback.format_exc()))
 
@@ -462,6 +468,11 @@ def check_manga_whatchlist(user_id):
         text = f'''\t\tNew [chapter]({mgn_url}) released\!
   {mgn_chapters}/{mal_chapters} [{mgn_name}]({mal_url})
         '''
-        tgbot.send_image(user_id, text=text, url=mgn_image_url, parse_mode='MarkdownV2')
+        try: # Send text if unable to send image
+          tgbot.send_image(user_id, text=text, url=mgn_image_url, parse_mode='MarkdownV2')
+        except telegram.error.BadRequest as e:
+          log.warning(f'Handling exception "{e}"')
+          tgbot.send_message(user_id, text=text, parse_mode='MarkdownV2')
+          log.warning((traceback.format_exc()))
     except Exception:
       log.warning((traceback.format_exc()))

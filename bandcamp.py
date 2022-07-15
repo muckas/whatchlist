@@ -143,6 +143,11 @@ def check_music_whatchlist(user_id):
             text += f'\n\t\t{track_name}'
           logic.users[user_id]['music'][artist]['last_release'] = release
           db.write('users', logic.users)
-          tgbot.send_image(user_id, text=text, url=release_image_url, parse_mode='MarkdownV2')
+          try: # Send text if unable to send image
+            tgbot.send_image(user_id, text=text, url=release_image_url, parse_mode='MarkdownV2')
+          except telegram.error.BadRequest as e:
+            log.warning(f'Handling exception "{e}"')
+            tgbot.send_message(user_id, text=text, parse_mode='MarkdownV2')
+            log.warning((traceback.format_exc()))
     except Exception:
       log.warning((traceback.format_exc()))
