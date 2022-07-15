@@ -13,7 +13,7 @@ import traceback
 import tgbot
 import logic
 
-VERSION = '0.5.3'
+VERSION = '0.5.4'
 NAME = 'Assistant'
 
 # Logger setup
