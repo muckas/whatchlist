@@ -13,8 +13,8 @@ import traceback
 import tgbot
 import logic
 
-VERSION = '0.5.4'
-NAME = 'Assistant'
+VERSION = '0.5.5'
+NAME = 'Whatchlist'
 
 # Logger setup
 with suppress(FileExistsError):
