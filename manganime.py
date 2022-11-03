@@ -4,15 +4,13 @@ import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import tgbot
 import mal
-from gogoanimeapi import gogoanime
-import manganelo
 import uuid
 import db
 import logic
+import manganato
+import gogoanime
 
 log = logging.getLogger('main')
-
-gogoanime_domain = 'https://gogoanime.gg/'
 
 def mal_return_anime(title):
   result = {
@@ -42,34 +40,6 @@ def mal_anime_search(name):
   except ValueError as e:
     log.warning(f'MyNimeList error: {e}')
     return []
-
-def gogo_return_anime(gogo_id):
-  title = gogoanime.get_anime_details(animeid=gogo_id)
-  name = title['title']
-  episodes = title['episodes']
-  return ({
-    'gogo_id': gogo_id,
-    'gogo_name': name,
-    'gogo_episodes': episodes,
-    })
-
-def gogo_get_anime(gogo_id):
-  log.debug(f'Getting GogoAnime anime, gogo_id: {gogo_id}')
-  return gogo_return_anime(gogo_id)
-
-def gogo_search(name):
-  log.info(f'Searching GogoAnime anime, query: "{name}"')
-  gogo_search = gogoanime.get_search_results(query=name)
-  try:
-    if gogo_search['status']:
-      log.warning(f'Gogoanime returned status: {gogo_search["status"]}, reason {gogo_search["reason"]}')
-      return []
-  except TypeError:
-    pass
-  results = []
-  for title in gogo_search:
-    results.append(gogo_return_anime(title['animeid']))
-  return results
 
 def mal_return_manga(title):
   try:
@@ -113,31 +83,6 @@ def mal_manga_search(name):
     log.warning(f'MyNimeList error: {e}')
     return []
 
-def mgn_return_manga(manga):
-  return ({
-    'mgn_name': manga.title,
-    'mgn_chapters': len(manga.chapter_list),
-    'mgn_url': manga.url,
-    'mgn_image_url': manga.icon_url,
-    })
-
-def mgn_get_manga(mgn_url):
-  log.debug(f'Getting Manganato manga, mgn_url: {mgn_url}')
-  manga = manganelo.storypage.get_story_page(mgn_url)
-  return mgn_return_manga(manga)
-
-def mgn_search(name):
-  log.info(f'Searching Manganato manga, query: "{name}"')
-  try:
-    mgn_search = manganelo.get_search_results(name)
-    results = []
-    for manga in mgn_search:
-      results.append(mgn_return_manga(manga))
-    return results
-  except Exception:
-    log.warning((traceback.format_exc()))
-    return []
-
 def add_anime(user_id):
   logic.temp_vars[user_id]['search_string'] = None
   logic.temp_vars[user_id]['mal_anime'] = None
@@ -171,14 +116,25 @@ def query_add_anime(user_id, query='0:noid'):
   last_row = [
       InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
       InlineKeyboardButton('Cancel', callback_data=f'{query_name}|{page}:cancel'),
-      InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),
       ]
+  if not mal_anime:
+    last_row.append(InlineKeyboardButton('Skip MAL', callback_data=f'{query_name}|{page+1}:skip'),)
+  last_row.append(InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),)
   if search_id == 'cancel':
     return 'Canceled adding anime', None, None
-  if search_id != 'noid':
+  elif search_id == 'skip':
+    mal_anime = logic.temp_vars[user_id]['mal_anime'] = {
+      'mal_id': str(uuid.uuid4()),
+      'mal_name': '',
+      'mal_episodes': '?',
+      'mal_url': '',
+      'mal_image_url': '',
+      }
+    page = 0
+  elif search_id != 'noid':
     search_id = int(search_id)
     if mal_anime:
-      gogo_anime = logic.temp_vars[user_id]['gogo_anime'] = gogo_get_anime(gogo_search_results[search_id]['gogo_id'])
+      gogo_anime = logic.temp_vars[user_id]['gogo_anime'] = gogoanime.get_anime(gogo_search_results[search_id]['gogo_url'])
     else:
       mal_anime = logic.temp_vars[user_id]['mal_anime'] = mal_get_anime(mal_search_results[search_id]['mal_id'])
       page = 0
@@ -199,7 +155,7 @@ def query_add_anime(user_id, query='0:noid'):
       slice_start = page * page_entries
       slice_end = slice_start + page_entries
       if gogo_search_results == None:
-        logic.temp_vars[user_id]['gogo_search_results'] = gogo_search_results = gogo_search(search_string)
+        logic.temp_vars[user_id]['gogo_search_results'] = gogo_search_results = gogoanime.search_anime(search_string)
       max_pages = (len(gogo_search_results) // page_entries)
       if gogo_search_results:
         num_id = 0
@@ -295,7 +251,7 @@ def query_add_manga(user_id, query='0:noid'):
   elif search_id != 'noid':
     search_id = int(search_id)
     if mal_manga:
-      mgn_manga = logic.temp_vars[user_id]['mgn_manga'] = mgn_get_manga(mgn_search_results[search_id]['mgn_url'])
+      mgn_manga = logic.temp_vars[user_id]['mgn_manga'] = manganato.get_manga(mgn_search_results[search_id]['mgn_url'])
     else:
       mal_manga = logic.temp_vars[user_id]['mal_manga'] = mal_get_manga(mal_search_results[search_id]['mal_id'])
       page = 0
@@ -316,7 +272,7 @@ def query_add_manga(user_id, query='0:noid'):
       slice_start = page * page_entries
       slice_end = slice_start + page_entries
       if mgn_search_results == None:
-        logic.temp_vars[user_id]['mgn_search_results'] = mgn_search_results = mgn_search(search_string)
+        logic.temp_vars[user_id]['mgn_search_results'] = mgn_search_results = manganato.search_manga(search_string)
       max_pages = (len(mgn_search_results) // page_entries)
       if mgn_search_results:
         num_id = 0
@@ -366,7 +322,7 @@ def get_anime_whatchlist(user_id):
     anime_entry = user_anime[mal_id]
     anime_name = tgbot.markdown_replace(anime_entry['gogo_name'])
     anime_episodes = f'{anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]}'
-    gogo_link = f'{gogoanime_domain}category/{anime_entry["gogo_id"]}'
+    gogo_link = anime_entry['gogo_url']
     mal_link = anime_entry['mal_url']
     text += f'\n[{anime_episodes}]({gogo_link}) [{anime_name}]({mal_link})'
   keyboard = tgbot.get_inline_options_keyboard(
@@ -414,19 +370,20 @@ def check_anime_whatchlist(user_id):
   user_anime = logic.users[user_id]['anime']
   for mal_id in user_anime:
     try:
-      gogo_id = user_anime[mal_id]['gogo_id']
       gogo_name = tgbot.markdown_replace(user_anime[mal_id]['gogo_name'])
       gogo_episodes = user_anime[mal_id]['gogo_episodes']
-      gogo_url = f'{gogoanime_domain}category/{gogo_id}'
+      gogo_url = user_anime[mal_id]['gogo_url']
+      gogo_image_url = user_anime[mal_id]['gogo_image_url']
       mal_image_url = user_anime[mal_id]['mal_image_url']
       mal_url = user_anime[mal_id]['mal_url']
-      mal_anime = mal_get_anime(mal_id)
       mal_episodes = user_anime[mal_id]['mal_episodes']
-      if mal_anime['mal_episodes'] != mal_episodes:
-        log.info(f'User {user_id}: Episodes changed for MyAnimeList anime {mal_id}')
-        logic.users[user_id]['anime'][mal_id]['mal_episodes'] = mal_episodes = mal_anime['mal_episodes']
-        db.write('users', logic.users)
-      gogo_anime = gogo_get_anime(gogo_id)
+      if not logic.is_valid_uuid(mal_id):
+        mal_anime = mal_get_anime(mal_id)
+        if mal_anime['mal_episodes'] != mal_episodes:
+          log.info(f'User {user_id}: Episodes changed for MyAnimeList anime {mal_id}')
+          logic.users[user_id]['anime'][mal_id]['mal_episodes'] = mal_episodes = mal_anime['mal_episodes']
+          db.write('users', logic.users)
+      gogo_anime = gogoanime.get_anime(gogo_url)
       if int(gogo_anime['gogo_episodes']) > int(gogo_episodes):
         log.info(f'User {user_id}: New episode for anime {gogo_name}')
         logic.users[user_id]['anime'][mal_id]['gogo_episodes'] = gogo_episodes = gogo_anime['gogo_episodes']
@@ -435,7 +392,7 @@ def check_anime_whatchlist(user_id):
   {gogo_episodes}/{mal_episodes} [{gogo_name}]({mal_url})
         '''
         try: # Send text if unable to send image
-          tgbot.send_image(user_id, text=text, url=mal_image_url, parse_mode='MarkdownV2')
+          tgbot.send_image(user_id, text=text, url=gogo_image_url, parse_mode='MarkdownV2')
         except telegram.error.BadRequest as e:
           log.warning(f'Handling exception "{e}"')
           tgbot.send_message(user_id, text=text, parse_mode='MarkdownV2')
@@ -460,7 +417,7 @@ def check_manga_whatchlist(user_id):
           log.info(f'User {user_id}: Chapters changed for MyAnimeList manga {mal_id}')
           logic.users[user_id]['manga'][mal_id]['mal_chapters'] = mal_chapters = mal_manga['mal_chapters']
           db.write('users', logic.users)
-      mgn_manga = mgn_get_manga(mgn_url)
+      mgn_manga = manganato.get_manga(mgn_url)
       if int(mgn_manga['mgn_chapters']) > int(mgn_chapters):
         log.info(f'User {user_id}: New chapter for manga {mgn_name}')
         logic.users[user_id]['manga'][mal_id]['mgn_chapters'] = mgn_chapters = mgn_manga['mgn_chapters']
