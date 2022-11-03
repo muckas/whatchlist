@@ -4,15 +4,13 @@ import telegram
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import tgbot
 import mal
-from gogoanimeapi import gogoanime
 import uuid
 import db
 import logic
 import manganato
+import gogoanime
 
 log = logging.getLogger('main')
-
-gogoanime_domain = 'https://gogoanime.gg/'
 
 def mal_return_anime(title):
   result = {
@@ -42,34 +40,6 @@ def mal_anime_search(name):
   except ValueError as e:
     log.warning(f'MyNimeList error: {e}')
     return []
-
-def gogo_return_anime(gogo_id):
-  title = gogoanime.get_anime_details(animeid=gogo_id)
-  name = title['title']
-  episodes = title['episodes']
-  return ({
-    'gogo_id': gogo_id,
-    'gogo_name': name,
-    'gogo_episodes': episodes,
-    })
-
-def gogo_get_anime(gogo_id):
-  log.debug(f'Getting GogoAnime anime, gogo_id: {gogo_id}')
-  return gogo_return_anime(gogo_id)
-
-def gogo_search(name):
-  log.info(f'Searching GogoAnime anime, query: "{name}"')
-  gogo_search = gogoanime.get_search_results(query=name)
-  try:
-    if gogo_search['status']:
-      log.warning(f'Gogoanime returned status: {gogo_search["status"]}, reason {gogo_search["reason"]}')
-      return []
-  except TypeError:
-    pass
-  results = []
-  for title in gogo_search:
-    results.append(gogo_return_anime(title['animeid']))
-  return results
 
 def mal_return_manga(title):
   try:
@@ -153,7 +123,7 @@ def query_add_anime(user_id, query='0:noid'):
   if search_id != 'noid':
     search_id = int(search_id)
     if mal_anime:
-      gogo_anime = logic.temp_vars[user_id]['gogo_anime'] = gogo_get_anime(gogo_search_results[search_id]['gogo_id'])
+      gogo_anime = logic.temp_vars[user_id]['gogo_anime'] = gogoanime.get_anime(gogo_search_results[search_id]['gogo_url'])
     else:
       mal_anime = logic.temp_vars[user_id]['mal_anime'] = mal_get_anime(mal_search_results[search_id]['mal_id'])
       page = 0
@@ -174,7 +144,7 @@ def query_add_anime(user_id, query='0:noid'):
       slice_start = page * page_entries
       slice_end = slice_start + page_entries
       if gogo_search_results == None:
-        logic.temp_vars[user_id]['gogo_search_results'] = gogo_search_results = gogo_search(search_string)
+        logic.temp_vars[user_id]['gogo_search_results'] = gogo_search_results = gogoanime.search_anime(search_string)
       max_pages = (len(gogo_search_results) // page_entries)
       if gogo_search_results:
         num_id = 0
@@ -341,7 +311,7 @@ def get_anime_whatchlist(user_id):
     anime_entry = user_anime[mal_id]
     anime_name = tgbot.markdown_replace(anime_entry['gogo_name'])
     anime_episodes = f'{anime_entry["gogo_episodes"]}/{anime_entry["mal_episodes"]}'
-    gogo_link = f'{gogoanime_domain}category/{anime_entry["gogo_id"]}'
+    gogo_link = anime_entry['gogo_url']
     mal_link = anime_entry['mal_url']
     text += f'\n[{anime_episodes}]({gogo_link}) [{anime_name}]({mal_link})'
   keyboard = tgbot.get_inline_options_keyboard(
@@ -389,10 +359,9 @@ def check_anime_whatchlist(user_id):
   user_anime = logic.users[user_id]['anime']
   for mal_id in user_anime:
     try:
-      gogo_id = user_anime[mal_id]['gogo_id']
       gogo_name = tgbot.markdown_replace(user_anime[mal_id]['gogo_name'])
       gogo_episodes = user_anime[mal_id]['gogo_episodes']
-      gogo_url = f'{gogoanime_domain}category/{gogo_id}'
+      gogo_url = user_anime[mal_id]['gogo_url']
       mal_image_url = user_anime[mal_id]['mal_image_url']
       mal_url = user_anime[mal_id]['mal_url']
       mal_anime = mal_get_anime(mal_id)
@@ -401,7 +370,7 @@ def check_anime_whatchlist(user_id):
         log.info(f'User {user_id}: Episodes changed for MyAnimeList anime {mal_id}')
         logic.users[user_id]['anime'][mal_id]['mal_episodes'] = mal_episodes = mal_anime['mal_episodes']
         db.write('users', logic.users)
-      gogo_anime = gogo_get_anime(gogo_id)
+      gogo_anime = gogoanime.get_anime(gogo_url)
       if int(gogo_anime['gogo_episodes']) > int(gogo_episodes):
         log.info(f'User {user_id}: New episode for anime {gogo_name}')
         logic.users[user_id]['anime'][mal_id]['gogo_episodes'] = gogo_episodes = gogo_anime['gogo_episodes']

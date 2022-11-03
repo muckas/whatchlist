@@ -2,7 +2,6 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import tgbot
 import mal
-from gogoanimeapi import gogoanime
 import uuid
 import db
 import constants
