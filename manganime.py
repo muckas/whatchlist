@@ -5,10 +5,10 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import tgbot
 import mal
 from gogoanimeapi import gogoanime
-import manganelo
 import uuid
 import db
 import logic
+import manganato
 
 log = logging.getLogger('main')
 
@@ -111,31 +111,6 @@ def mal_manga_search(name):
     return results
   except ValueError as e:
     log.warning(f'MyNimeList error: {e}')
-    return []
-
-def mgn_return_manga(manga):
-  return ({
-    'mgn_name': manga.title,
-    'mgn_chapters': len(manga.chapter_list),
-    'mgn_url': manga.url,
-    'mgn_image_url': manga.icon_url,
-    })
-
-def mgn_get_manga(mgn_url):
-  log.debug(f'Getting Manganato manga, mgn_url: {mgn_url}')
-  manga = manganelo.storypage.get_story_page(mgn_url)
-  return mgn_return_manga(manga)
-
-def mgn_search(name):
-  log.info(f'Searching Manganato manga, query: "{name}"')
-  try:
-    mgn_search = manganelo.get_search_results(name)
-    results = []
-    for manga in mgn_search:
-      results.append(mgn_return_manga(manga))
-    return results
-  except Exception:
-    log.warning((traceback.format_exc()))
     return []
 
 def add_anime(user_id):
@@ -295,7 +270,7 @@ def query_add_manga(user_id, query='0:noid'):
   elif search_id != 'noid':
     search_id = int(search_id)
     if mal_manga:
-      mgn_manga = logic.temp_vars[user_id]['mgn_manga'] = mgn_get_manga(mgn_search_results[search_id]['mgn_url'])
+      mgn_manga = logic.temp_vars[user_id]['mgn_manga'] = manganato.get_manga(mgn_search_results[search_id]['mgn_url'])
     else:
       mal_manga = logic.temp_vars[user_id]['mal_manga'] = mal_get_manga(mal_search_results[search_id]['mal_id'])
       page = 0
@@ -316,7 +291,7 @@ def query_add_manga(user_id, query='0:noid'):
       slice_start = page * page_entries
       slice_end = slice_start + page_entries
       if mgn_search_results == None:
-        logic.temp_vars[user_id]['mgn_search_results'] = mgn_search_results = mgn_search(search_string)
+        logic.temp_vars[user_id]['mgn_search_results'] = mgn_search_results = manganato.search_manga(search_string)
       max_pages = (len(mgn_search_results) // page_entries)
       if mgn_search_results:
         num_id = 0
@@ -460,7 +435,7 @@ def check_manga_whatchlist(user_id):
           log.info(f'User {user_id}: Chapters changed for MyAnimeList manga {mal_id}')
           logic.users[user_id]['manga'][mal_id]['mal_chapters'] = mal_chapters = mal_manga['mal_chapters']
           db.write('users', logic.users)
-      mgn_manga = mgn_get_manga(mgn_url)
+      mgn_manga = manganato.get_manga(mgn_url)
       if int(mgn_manga['mgn_chapters']) > int(mgn_chapters):
         log.info(f'User {user_id}: New chapter for manga {mgn_name}')
         logic.users[user_id]['manga'][mal_id]['mgn_chapters'] = mgn_chapters = mgn_manga['mgn_chapters']
