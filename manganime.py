@@ -116,11 +116,22 @@ def query_add_anime(user_id, query='0:noid'):
   last_row = [
       InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
       InlineKeyboardButton('Cancel', callback_data=f'{query_name}|{page}:cancel'),
-      InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),
       ]
+  if not mal_anime:
+    last_row.append(InlineKeyboardButton('Skip MAL', callback_data=f'{query_name}|{page+1}:skip'),)
+  last_row.append(InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),)
   if search_id == 'cancel':
     return 'Canceled adding anime', None, None
-  if search_id != 'noid':
+  elif search_id == 'skip':
+    mal_anime = logic.temp_vars[user_id]['mal_anime'] = {
+      'mal_id': str(uuid.uuid4()),
+      'mal_name': '',
+      'mal_episodes': '?',
+      'mal_url': '',
+      'mal_image_url': '',
+      }
+    page = 0
+  elif search_id != 'noid':
     search_id = int(search_id)
     if mal_anime:
       gogo_anime = logic.temp_vars[user_id]['gogo_anime'] = gogoanime.get_anime(gogo_search_results[search_id]['gogo_url'])
@@ -362,14 +373,16 @@ def check_anime_whatchlist(user_id):
       gogo_name = tgbot.markdown_replace(user_anime[mal_id]['gogo_name'])
       gogo_episodes = user_anime[mal_id]['gogo_episodes']
       gogo_url = user_anime[mal_id]['gogo_url']
+      gogo_image_url = user_anime[mal_id]['gogo_image_url']
       mal_image_url = user_anime[mal_id]['mal_image_url']
       mal_url = user_anime[mal_id]['mal_url']
-      mal_anime = mal_get_anime(mal_id)
       mal_episodes = user_anime[mal_id]['mal_episodes']
-      if mal_anime['mal_episodes'] != mal_episodes:
-        log.info(f'User {user_id}: Episodes changed for MyAnimeList anime {mal_id}')
-        logic.users[user_id]['anime'][mal_id]['mal_episodes'] = mal_episodes = mal_anime['mal_episodes']
-        db.write('users', logic.users)
+      if not logic.is_valid_uuid(mal_id):
+        mal_anime = mal_get_anime(mal_id)
+        if mal_anime['mal_episodes'] != mal_episodes:
+          log.info(f'User {user_id}: Episodes changed for MyAnimeList anime {mal_id}')
+          logic.users[user_id]['anime'][mal_id]['mal_episodes'] = mal_episodes = mal_anime['mal_episodes']
+          db.write('users', logic.users)
       gogo_anime = gogoanime.get_anime(gogo_url)
       if int(gogo_anime['gogo_episodes']) > int(gogo_episodes):
         log.info(f'User {user_id}: New episode for anime {gogo_name}')
@@ -379,7 +392,7 @@ def check_anime_whatchlist(user_id):
   {gogo_episodes}/{mal_episodes} [{gogo_name}]({mal_url})
         '''
         try: # Send text if unable to send image
-          tgbot.send_image(user_id, text=text, url=mal_image_url, parse_mode='MarkdownV2')
+          tgbot.send_image(user_id, text=text, url=gogo_image_url, parse_mode='MarkdownV2')
         except telegram.error.BadRequest as e:
           log.warning(f'Handling exception "{e}"')
           tgbot.send_message(user_id, text=text, parse_mode='MarkdownV2')
