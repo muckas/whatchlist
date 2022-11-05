@@ -112,14 +112,6 @@ def query_add_anime(user_id, query='0:noid'):
   page = int(page)
   if page < 0: page = 0
   max_pages = 0
-  # Last row
-  last_row = [
-      InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
-      InlineKeyboardButton('Cancel', callback_data=f'{query_name}|{page}:cancel'),
-      ]
-  if not mal_anime:
-    last_row.append(InlineKeyboardButton('Skip MAL', callback_data=f'{query_name}|{page+1}:skip'),)
-  last_row.append(InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),)
   if search_id == 'cancel':
     return 'Canceled adding anime', None, None
   elif search_id == 'skip':
@@ -138,6 +130,15 @@ def query_add_anime(user_id, query='0:noid'):
     else:
       mal_anime = logic.temp_vars[user_id]['mal_anime'] = mal_get_anime(mal_search_results[search_id]['mal_id'])
       page = 0
+
+  # Last row
+  last_row = [
+      InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
+      InlineKeyboardButton('Cancel', callback_data=f'{query_name}|{page}:cancel'),
+      ]
+  if not mal_anime:
+    last_row.append(InlineKeyboardButton('Skip MAL', callback_data=f'{query_name}|{page+1}:skip'),)
+  last_row.append(InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),)
 
   text = 'Anime search\n==================='
   if search_string:
@@ -228,14 +229,6 @@ def query_add_manga(user_id, query='0:noid'):
   page = int(page)
   if page < 0: page = 0
   max_pages = 0
-  # Last row
-  last_row = [
-      InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
-      InlineKeyboardButton('Cancel', callback_data=f'{query_name}|{page}:cancel'),
-      ]
-  if not mal_manga:
-    last_row.append(InlineKeyboardButton('Skip MAL', callback_data=f'{query_name}|{page+1}:skip'),)
-  last_row.append(InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),)
   if search_id == 'cancel':
     return 'Canceled adding manga', None, None
   elif search_id == 'skip':
@@ -255,6 +248,15 @@ def query_add_manga(user_id, query='0:noid'):
     else:
       mal_manga = logic.temp_vars[user_id]['mal_manga'] = mal_get_manga(mal_search_results[search_id]['mal_id'])
       page = 0
+
+  # Last row
+  last_row = [
+      InlineKeyboardButton('<', callback_data=f'{query_name}|{page-1}:noid'),
+      InlineKeyboardButton('Cancel', callback_data=f'{query_name}|{page}:cancel'),
+      ]
+  if not mal_manga:
+    last_row.append(InlineKeyboardButton('Skip MAL', callback_data=f'{query_name}|{page+1}:skip'),)
+  last_row.append(InlineKeyboardButton('>', callback_data=f'{query_name}|{page+1}:noid'),)
 
   text = 'Manga search\n==================='
   if search_string:

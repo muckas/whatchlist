@@ -13,7 +13,7 @@ import traceback
 import tgbot
 import logic
 
-VERSION = '0.6.0'
+VERSION = '0.6.1'
 NAME = 'Whatchlist'
 
 # Logger setup
